@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+:root {
+  /* Base background and text */
+  --background: #f3f4f6; /* Cinza Claro */
+  --foreground: #0a192f; /* Azul Marinho (títulos) */
+  /* Radius e bordas */
+  --radius: 6px;
+  --border: rgba(10, 25, 47, 0.2); /* Navy sutil */
+  --muted: #9ca3af; /* Texto secundário */
+  --ring: #2563eb; /* Azul Royal para foco */
+  /* Sombras utilitárias */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 10px rgba(0,0,0,0.10);
+  --shadow-lg: 0 10px 20px rgba(0,0,0,0.12);
+}
+
+@theme inline {
+  /* Semantic colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: #0a192f; /* Azul Marinho: títulos/bordas */
+  --color-primary-foreground: #ffffff; /* Texto sobre primária */
+  --color-secondary: #0a192f; /* Mantemos navy como secundária para coerência */
+  --color-accent: #2563eb; /* Azul Royal: botões/destaques */
+  --color-surface: #ffffff; /* Cartões/áreas elevadas */
+  --color-surface-foreground: var(--foreground); /* Texto sobre surface */
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-success: #10b981; /* Verde Esmeralda para positivos */
+  /* Radius */
+  --radius-base: var(--radius);
+
+  /* Fonts */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Modo escuro opcional (coeso com a paleta) */
+    --background: #0a192f; /* primária como fundo no dark */
+    --foreground: #ffffff; /* texto claro */
+    /* Ajuste de contraste para superfícies em dark */
+    --color-surface: #102341; /* navy mais claro para surface no dark */
+    --color-surface-foreground: #ffffff; /* Texto claro sobre surface escura */
+    --border: rgba(255,255,255,0.25);
+    --muted: rgba(255,255,255,0.7);
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial,
+    Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+}
+
+/* Foco visível padrão para elementos interativos */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+/* Utilitário para seções com surface e texto apropriado */
+.surface-section {
+  background-color: var(--color-surface);
+  color: var(--color-surface-foreground);
+}
+
+/* Seção padrão: espaçamento vertical consistente */
+.section {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+/* Grid padrão para cards responsivos */
+.card-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) { /* sm */
+  .card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) { /* lg */
+  .card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Preview A4 vertical (neutro) */
+.a4-preview {
+  width: 100%;
+  max-width: 440px; /* largura razoável para preview */
+  aspect-ratio: 1 / 1.414; /* A4 */
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.a4-page {
+  width: 100%;
+  height: 100%;
+  background: #ffffff; /* sempre branco para simular papel */
+  color: #111827; /* cinza-900 para contraste alto */
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08);
+  border-radius: 4px; /* papel geralmente sem radius acentuado */
+  padding: 24px;
+  overflow: hidden;
+  font-size: 12px; /* base para conteúdo de currículo */
+  line-height: 1.5;
+}
+
+/* Tipografia e utilitários internos do A4 */
+.a4-page h1 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.a4-page h2 {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #374151; /* gray-700 */
+  margin: 12px 0 4px 0;
+}
+
+.a4-page .muted { opacity: 0.7; }
+.a4-page .subtle { opacity: 0.8; }
+
+.a4-page .chip {
+  border: 1px solid #e5e7eb; /* gray-200 */
+  background: #f3f4f6; /* gray-100 */
+  border-radius: 9999px;
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+/* Utilitário de cor de sucesso */
+.text-success { color: var(--color-success); }
