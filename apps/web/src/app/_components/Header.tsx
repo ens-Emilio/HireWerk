@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import CurrentContext from "./CurrentContext";
 import { Button } from "@/components/ui/Button";
+import LoginLink from "@/app/_components/LoginLink";
  
 
 export default async function Header() {
@@ -20,13 +20,13 @@ export default async function Header() {
           <nav className="hidden md:flex items-center gap-4 text-sm text-primary-foreground/80">
             {user ? (
               <>
-                <Link href="/dashboard" className="hover:text-primary-foreground">Dashboard</Link>
-                <Link href="/resumes" className="hover:text-primary-foreground">Currículos</Link>
+                <Link href="/dashboard" className="hover:underline">Dashboard</Link>
+                <Link href="/resumes" className="hover:underline">Currículos</Link>
               </>
             ) : (
               <>
-                <a href="#recursos" className="hover:text-primary-foreground">Recursos</a>
-                <a href="#como-funciona" className="hover:text-primary-foreground">Como funciona</a>
+                <a href="#recursos" className="hover:underline">Recursos</a>
+                <a href="#como-funciona" className="hover:underline">Como funciona</a>
               </>
             )}
           </nav>
@@ -51,9 +51,9 @@ export default async function Header() {
         <nav className="flex items-center gap-3 text-sm">
           {user ? (
             <>
-              {/* Ações rápidas do contexto atual (ex.: exportar/selecionar template) */}
-              <CurrentContext variant="header" />
-              <span className="hidden sm:inline text-primary-foreground/80">{user.email}</span>
+              <Link href="/settings" className="hidden sm:inline text-primary-foreground/70 hover:underline">
+                Conta
+              </Link>
               <form action="/auth/signout" method="post">
                 <Button variant="secondary" size="md" type="submit">
                   Sair
@@ -62,12 +62,11 @@ export default async function Header() {
             </>
           ) : (
             <>
-              <Link
-                href="/login"
+              <LoginLink
                 className="inline-flex h-9 items-center justify-center rounded-md bg-accent px-3 text-sm font-medium text-white transition-colors hover:bg-accent/90"
               >
                 Entrar
-              </Link>
+              </LoginLink>
             </>
           )}
         </nav>

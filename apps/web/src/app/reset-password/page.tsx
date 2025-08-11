@@ -54,7 +54,7 @@ function InnerResetPassword() {
 
   return (
     <main className="min-h-dvh flex items-center justify-center p-6 bg-background">
-      <form onSubmit={onSubmit} className="w-full max-w-sm rounded-xl border border-secondary/50 bg-surface p-6 shadow-sm">
+      <form onSubmit={onSubmit} className="w-full max-w-sm rounded-xl border border-border bg-white p-6 shadow-sm text-black">
         <a href="/" className="mb-4 inline-flex items-center gap-2 text-sm text-accent hover:underline">
           <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
@@ -75,7 +75,7 @@ function InnerResetPassword() {
           placeholder="Nova senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mb-3 h-10 w-full rounded-md border border-secondary/70 bg-surface text-primary placeholder:text-[#6b7280] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+          className="mb-3 h-10 w-full rounded-md border border-border bg-white text-black placeholder:text-[#6b7280] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
           autoComplete="new-password"
           required
         />
@@ -84,14 +84,14 @@ function InnerResetPassword() {
           placeholder="Confirmar senha"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          className="mb-3 h-10 w-full rounded-md border border-secondary/70 bg-surface text-primary placeholder:text-[#6b7280] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+          className="mb-3 h-10 w-full rounded-md border border-border bg-white text-black placeholder:text-[#6b7280] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
           autoComplete="new-password"
           required
         />
         <button
           type="submit"
           disabled={loading}
-          className="h-10 w-full rounded-md border border-secondary/70 bg-secondary text-white px-4 text-sm font-medium hover:bg-secondary/90 disabled:opacity-50"
+          className="h-10 w-full rounded-md border border-transparent bg-secondary text-white px-4 text-sm font-medium hover:bg-secondary/90 disabled:opacity-50"
         >
           Salvar nova senha
         </button>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="384" viewBox="0 0 512 384" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f3f4f6"/>
+      <stop offset="100%" stop-color="#e5e7eb"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="384" fill="#ffffff"/>
+  <rect x="56" y="32" rx="8" ry="8" width="400" height="320" fill="url(#g)" stroke="#d1d5db"/>
+  <!-- Header -->
+  <rect x="76" y="52" width="200" height="20" fill="#111827"/>
+  <rect x="76" y="78" width="160" height="12" fill="#6b7280"/>
+  <!-- Summary lines -->
+  <rect x="76" y="108" width="340" height="8" fill="#9ca3af"/>
+  <rect x="76" y="124" width="320" height="8" fill="#d1d5db"/>
+  <rect x="76" y="140" width="300" height="8" fill="#d1d5db"/>
+  <!-- Skills pills -->
+  <rect x="76" y="176" rx="6" ry="6" width="70" height="16" fill="#e5e7eb" stroke="#d1d5db"/>
+  <rect x="154" y="176" rx="6" ry="6" width="60" height="16" fill="#e5e7eb" stroke="#d1d5db"/>
+  <rect x="222" y="176" rx="6" ry="6" width="80" height="16" fill="#e5e7eb" stroke="#d1d5db"/>
+  <rect x="310" y="176" rx="6" ry="6" width="60" height="16" fill="#e5e7eb" stroke="#d1d5db"/>
+  <rect x="376" y="176" rx="6" ry="6" width="40" height="16" fill="#e5e7eb" stroke="#d1d5db"/>
+</svg>

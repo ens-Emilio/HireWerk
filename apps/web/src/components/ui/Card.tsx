@@ -17,7 +17,8 @@ export function Card({ className, padding = "md", hover = false, ...props }: Car
   return (
     <div
       className={cn(
-        "rounded-md border border-secondary/40 bg-surface text-foreground shadow-sm",
+        "rounded-md border shadow-sm",
+        "border-[var(--color-border)] bg-white text-black",
         hover && "transition-shadow hover:shadow-md",
         paddings[padding],
         className

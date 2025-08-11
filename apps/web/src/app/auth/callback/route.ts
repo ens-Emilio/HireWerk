@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   // Supabase manipula os cookies via getSupabaseServerClient
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
+  const redirect = searchParams.get("redirect");
   if (!code) {
     console.warn("[auth/callback] missing_code", { url: request.url });
     return NextResponse.redirect(new URL("/login?error=oauth", request.url));
@@ -20,8 +21,10 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/login?error=session", request.url));
   }
 
-  console.log("[auth/callback] exchange:success -> redirect:/");
-  return NextResponse.redirect(new URL("/", request.url));
+  const isSafePath = (p: string | null) => !!p && p.startsWith("/") && !p.startsWith("//");
+  const to = isSafePath(redirect) ? (redirect as string) : "/dashboard";
+  console.log("[auth/callback] exchange:success -> redirect:", to);
+  return NextResponse.redirect(new URL(to, request.url));
 }
 
 

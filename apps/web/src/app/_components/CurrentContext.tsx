@@ -5,7 +5,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Variant = "sidebar" | "header";
 
-type TemplateRow = { id: string; name: string };
+type TemplateRow = { id: string; name: string; slug: string };
 type ResumeRow = { id: string; title: string; template_id: string | null };
 
 export default function CurrentContext({ variant = "sidebar" }: { variant?: Variant }) {
@@ -38,7 +38,7 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
             .single(),
           supabase
             .from("templates")
-            .select("id,name"),
+            .select("id,name,slug"),
         ]);
         if (!mounted) return;
         if (!r1.error && r1.data) setResume(r1.data as ResumeRow);
@@ -65,6 +65,13 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
       });
       if (!res.ok) throw new Error("Falha ao salvar template");
       setResume((r) => (r ? { ...r, template_id: tplId } : r));
+      // Notifica a prévia para trocar o template imediatamente
+      const slug = templates.find((t) => t.id === tplId)?.slug;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("hirewerk:template-changed", { detail: { id: tplId, slug } })
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -76,8 +83,14 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
     return (
       <div className="hidden md:flex items-center gap-2">
         <a
+          href={resumeId ? `/templates?id=${resumeId}` : "/templates"}
+          className="inline-flex h-9 items-center justify-center rounded-md border border-border px-3 text-xs font-medium text-foreground hover:bg-foreground/10"
+        >
+          Templates
+        </a>
+        <a
           href={`/export/render/${resumeId}`}
-          className="h-9 rounded-md border border-secondary/60 bg-secondary text-primary-foreground px-3 text-xs hover:bg-secondary/90"
+          className="inline-flex h-9 items-center justify-center rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90 text-center"
         >
           Exportar PDF
         </a>
@@ -85,13 +98,24 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
           value={resume?.template_id ?? ""}
           onChange={onChangeTemplate}
           disabled={loading || saving}
-          className="h-9 rounded-md border border-secondary/60 bg-surface px-2 text-xs text-foreground"
+          className="h-9 rounded-md border border-border bg-surface px-2 text-xs text-foreground"
+          style={{ colorScheme: "dark" }}
         >
-          <option value="" disabled>
+          <option
+            value=""
+            disabled
+            className="bg-surface text-foreground/70"
+            style={{ backgroundColor: "hsl(var(--surface))", color: "hsl(var(--foreground) / 0.7)" }}
+          >
             {loading ? "Carregando…" : "Template"}
           </option>
           {templates.map((t) => (
-            <option key={t.id} value={t.id}>
+            <option
+              key={t.id}
+              value={t.id}
+              className="bg-surface text-foreground"
+              style={{ backgroundColor: "hsl(var(--surface))", color: "hsl(var(--foreground))" }}
+            >
               {t.name}
             </option>
           ))}
@@ -101,9 +125,9 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
   }
 
   return (
-    <div className="mb-6 rounded-lg border border-secondary/40 bg-surface p-3">
-      <div className="text-xs font-semibold text-foreground/70">Currículo</div>
-      <div className="mt-1 text-sm text-foreground truncate" title={resume?.title || ""}>
+    <div className="mb-6 rounded-lg border border-border bg-white p-3 text-black">
+      <div className="text-xs font-semibold text-black/60">Currículo</div>
+      <div className="mt-1 text-sm text-black truncate" title={resume?.title || ""}>
         {resume?.title || "Carregando…"}
       </div>
       <div className="mt-3 flex items-center gap-2">
@@ -111,20 +135,31 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
           value={resume?.template_id ?? ""}
           onChange={onChangeTemplate}
           disabled={loading || saving}
-          className="h-8 flex-1 rounded-md border border-secondary/60 bg-surface px-2 text-xs text-foreground"
+          className="h-8 flex-1 rounded-md border border-border bg-surface px-2 text-xs text-foreground"
+          style={{ colorScheme: "dark" }}
         >
-          <option value="" disabled>
+          <option
+            value=""
+            disabled
+            className="bg-surface text-foreground/70"
+            style={{ backgroundColor: "hsl(var(--surface))", color: "hsl(var(--foreground) / 0.7)" }}
+          >
             {loading ? "Carregando…" : "Escolher template"}
           </option>
           {templates.map((t) => (
-            <option key={t.id} value={t.id}>
+            <option
+              key={t.id}
+              value={t.id}
+              className="bg-surface text-foreground"
+              style={{ backgroundColor: "hsl(var(--surface))", color: "hsl(var(--foreground))" }}
+            >
               {t.name}
             </option>
           ))}
         </select>
         <a
           href={`/export/render/${resumeId}`}
-          className="h-8 rounded-md border border-secondary/60 bg-secondary text-primary-foreground px-2 text-xs hover:bg-secondary/90"
+          className="inline-flex h-8 items-center justify-center rounded-md bg-accent px-2 text-xs font-medium text-white hover:bg-accent/90 text-center"
         >
           Exportar
         </a>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="384" viewBox="0 0 512 384" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="384" fill="#ffffff"/>
+  <!-- Simple name + headline -->
+  <rect x="64" y="56" width="220" height="18" fill="#111827"/>
+  <rect x="64" y="80" width="160" height="10" fill="#6b7280"/>
+  <!-- Summary minimal lines -->
+  <rect x="64" y="112" width="320" height="8" fill="#9ca3af"/>
+  <rect x="64" y="128" width="300" height="8" fill="#e5e7eb"/>
+  <rect x="64" y="144" width="280" height="8" fill="#e5e7eb"/>
+  <!-- Bulleted skills list -->
+  <circle cx="72" cy="182" r="3" fill="#111827"/>
+  <rect x="82" y="176" width="120" height="8" fill="#6b7280"/>
+  <circle cx="72" cy="202" r="3" fill="#111827"/>
+  <rect x="82" y="196" width="100" height="8" fill="#9ca3af"/>
+  <circle cx="72" cy="222" r="3" fill="#111827"/>
+  <rect x="82" y="216" width="140" height="8" fill="#d1d5db"/>
+</svg>

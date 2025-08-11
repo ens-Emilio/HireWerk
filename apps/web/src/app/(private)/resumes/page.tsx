@@ -19,21 +19,21 @@ export default async function ResumesPage() {
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">Meus currículos</h1>
         <form action={createResume}>
-          <Button variant="secondary" size="md" type="submit">
+          <Button variant="primary" size="md" type="submit">
             Novo currículo
           </Button>
         </form>
       </div>
 
       {data && data.length > 0 ? (
-        <ul className="divide-y divide-secondary/50 rounded-md border border-secondary/50 bg-surface text-foreground">
+        <ul className="divide-y divide-border rounded-md border border-border bg-white text-black">
           {data.map((r) => (
             <li key={r.id} className="flex items-center justify-between px-4 py-3">
               <div>
                 <Link href={`/resumes/${r.id}`} className="font-medium hover:underline">
                   {r.title}
                 </Link>
-                <div className="text-xs text-foreground/80">
+                <div className="text-xs text-black/70">
                   Atualizado em {new Date(r.updated_at as string).toLocaleString()}
                 </div>
               </div>
@@ -57,7 +57,7 @@ export default async function ResumesPage() {
             <div className="mt-1 text-foreground">Crie seu primeiro currículo para começar.</div>
           </div>
           <form action={createResume}>
-            <Button variant="secondary" size="md" type="submit">
+            <Button variant="primary" size="md" type="submit">
               Criar currículo
             </Button>
           </form>

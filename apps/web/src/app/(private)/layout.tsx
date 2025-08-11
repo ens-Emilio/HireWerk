@@ -13,7 +13,7 @@ export default async function PrivateLayout({
   if (!data.user) redirect("/login");
 
   return (
-    <div className="min-h-dvh grid grid-cols-[240px_1fr] bg-background text-foreground">
+    <div className="theme-dark min-h-dvh grid grid-cols-[240px_1fr] bg-background text-foreground">
       {/* Sidebar */}
       <div>
         <Sidebar />

@@ -16,9 +16,9 @@ const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
   secondary:
     "bg-secondary text-primary-foreground hover:bg-secondary/90 focus-visible:ring-secondary ring-offset-background",
   outline:
-    "border border-secondary/60 bg-transparent text-foreground hover:bg-secondary/10 focus-visible:ring-secondary ring-offset-background",
+    "border border-border bg-transparent text-foreground hover:bg-foreground/10 focus-visible:ring-accent ring-offset-background",
   ghost:
-    "bg-transparent hover:bg-secondary/10 text-foreground focus-visible:ring-secondary ring-offset-background",
+    "bg-transparent hover:bg-foreground/10 text-foreground focus-visible:ring-accent ring-offset-background",
   danger:
     "bg-red-600 text-white hover:bg-red-600/90 focus-visible:ring-red-600 ring-offset-background",
 };

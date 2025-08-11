@@ -1,12 +1,16 @@
 "use client";
 import { useCallback, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const nextParam = (searchParams.get("next") || "").toString();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const emailValid = /[^\s@]+@[^\s@]+\.[^\s@]+/.test(email);
 
   // OAuth removido conforme preferência do usuário
@@ -15,10 +19,13 @@ export default function LoginPage() {
     setLoading(true);
     setMessage(null);
     try {
-      console.log("[login] signInWithPassword:start", { emailMasked: email.replace(/(.{2}).+(@.*)/, "$1***$2") });
-      if (!emailValid || !password) {
+      const emailInput = email.trim();
+      const passwordInput = password.trim();
+      const localEmailValid = /[^\s@]+@[^\s@]+\.[^\s@]+/.test(emailInput);
+      console.log("[login] signInWithPassword:start", { emailMasked: emailInput.replace(/(.{2}).+(@.*)/, "$1***$2") });
+      if (!localEmailValid || !passwordInput) {
         setMessage("Informe um e-mail válido e a senha.");
-        console.warn("[login] signInWithPassword:invalid_input", { emailValid, hasPassword: Boolean(password) });
+        console.warn("[login] signInWithPassword:invalid_input", { emailValid: localEmailValid, hasPassword: Boolean(passwordInput) });
         return;
       }
       // Checa rate limit antes de tentar autenticar
@@ -26,7 +33,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/rate-limit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, scope: "login" }),
+        body: JSON.stringify({ email: emailInput, scope: "login" }),
       });
       const rl = await res.json();
       console.log("[login] rateLimit:response", { status: res.status, rl });
@@ -38,13 +45,25 @@ export default function LoginPage() {
 
       const supabase = getSupabaseBrowserClient();
       console.log("[login] supabase.signInWithPassword:call");
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: emailInput, password: passwordInput });
       if (error) {
-        console.error("[login] supabase.signInWithPassword:error", { name: error.name, message: error.message, status: (error as any)?.status });
+        const status = (error as any)?.status;
+        const msg = (error.message || "").toLowerCase();
+        console.error("[login] supabase.signInWithPassword:error", { name: error.name, message: error.message, status });
+        if (status === 400) {
+          if (msg.includes("confirm") || msg.includes("not confirmed")) {
+            setMessage("Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada.");
+          } else {
+            setMessage("E-mail ou senha inválidos.");
+          }
+          return;
+        }
+        setMessage(error.message || "Falha ao entrar");
+        return;
       }
-      if (error) throw error;
-      console.log("[login] signInWithPassword:success -> redirect:/dashboard");
-      window.location.href = "/dashboard";
+      const dest = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/dashboard";
+      console.log("[login] signInWithPassword:success -> redirect:", dest);
+      window.location.href = dest;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Falha ao entrar";
       console.error("[login] signInWithPassword:catch", { error: e });
@@ -53,7 +72,7 @@ export default function LoginPage() {
       console.log("[login] signInWithPassword:end");
       setLoading(false);
     }
-  }, [email, password]);
+  }, [email, password, nextParam]);
 
   const signUpWithPassword = useCallback(async () => {
     setLoading(true);
@@ -82,17 +101,30 @@ export default function LoginPage() {
       }
 
       console.log("[login] supabase.signUp:call");
+      const dest = nextParam || "/dashboard";
+      const emailRedirectTo = `${origin}/auth/callback?redirect=${encodeURIComponent(dest)}`;
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${origin}/auth/callback` },
+        options: { emailRedirectTo },
       });
       if (error) {
-        console.error("[login] supabase.signUp:error", { name: error.name, message: error.message, status: (error as any)?.status });
+        const status = (error as any)?.status;
+        const code = (error as any)?.code;
+        const msg = (error.message || "").toLowerCase();
+        const already = status === 422 || msg.includes("already registered") || msg.includes("already exists") || msg.includes("user already") || msg.includes("exists");
+        if (already) {
+          console.warn("[login] signUp:email_already_registered", { status, code });
+          setMessage("E-mail já registrado. Faça login ou recupere a senha.");
+          return;
+        }
+        console.error("[login] supabase.signUp:error", { name: error.name, message: error.message, status, code });
+        setMessage(error.message || "Falha ao criar conta");
+        return;
       }
-      if (error) throw error;
-      console.log("[login] signUpWithPassword:success -> email_verification_required");
-      setMessage("Conta criada. Verifique seu e-mail para confirmar o acesso.");
+      console.log("[login] signUpWithPassword:success -> email_verification_required, redirect:/check-email");
+      const checkUrl = `/check-email?email=${encodeURIComponent(email)}${dest ? `&next=${encodeURIComponent(dest)}` : ""}`;
+      window.location.href = checkUrl;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Falha ao criar conta";
       console.error("[login] signUpWithPassword:catch", { error: e });
@@ -101,13 +133,13 @@ export default function LoginPage() {
       console.log("[login] signUpWithPassword:end");
       setLoading(false);
     }
-  }, [email, password]);
+  }, [email, password, nextParam]);
 
   // Link mágico removido conforme preferência do usuário
 
   return (
     <main className="min-h-dvh flex items-center justify-center p-6 bg-background">
-      <div className="w-full max-w-sm rounded-xl border border-secondary/50 bg-surface p-6 shadow-sm">
+      <div className="w-full max-w-sm rounded-xl border border-border bg-white p-6 shadow-sm text-black">
         <a href="/" className="mb-4 inline-flex items-center gap-2 text-sm text-accent hover:underline">
           <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
@@ -131,19 +163,40 @@ export default function LoginPage() {
             placeholder="seu@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="h-10 rounded-md border border-secondary/70 bg-surface text-primary placeholder:text-[#6b7280] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+            className="h-10 rounded-md border border-border bg-white text-black placeholder:text-[#6b7280] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
             autoComplete="email"
           />
           <label className="text-sm font-medium text-primary" htmlFor="password">Senha</label>
-          <input
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="h-10 rounded-md border border-secondary/70 bg-surface text-primary placeholder:text-[#6b7280] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-            autoComplete="current-password"
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="h-10 w-full rounded-md border border-border bg-white text-black placeholder:text-[#6b7280] pr-10 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              aria-pressed={showPassword}
+              className="absolute inset-y-0 right-0 px-3 flex items-center text-[#6b7280] hover:text-primary focus:outline-none"
+            >
+              {showPassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.11 1 12c.57-1.36 1.4-2.61 2.46-3.68M9.88 9.88A3 3 0 1 0 14.12 14.12" />
+                  <path d="M1 1l22 22" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={signInWithPassword}
@@ -155,7 +208,7 @@ export default function LoginPage() {
             <button
               onClick={signUpWithPassword}
               disabled={loading}
-              className="h-10 flex-1 rounded-md border border-secondary/70 text-white bg-secondary px-4 text-sm font-medium hover:bg-secondary/90 disabled:opacity-50"
+              className="h-10 flex-1 rounded-md border border-transparent text-white bg-secondary px-4 text-sm font-medium hover:bg-secondary/90 disabled:opacity-50"
             >
               Criar conta
             </button>

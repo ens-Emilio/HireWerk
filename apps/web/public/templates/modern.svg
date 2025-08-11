@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="384" viewBox="0 0 512 384" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="384" fill="#ffffff"/>
+  <!-- Header block -->
+  <rect x="48" y="40" width="416" height="64" rx="8" fill="#111827"/>
+  <rect x="64" y="56" width="240" height="16" fill="#ffffff"/>
+  <rect x="64" y="78" width="160" height="10" fill="#d1d5db"/>
+  <!-- Two columns -->
+  <rect x="48" y="124" width="272" height="168" rx="8" fill="#f3f4f6" stroke="#e5e7eb"/>
+  <rect x="328" y="124" width="136" height="168" rx="8" fill="#f9fafb" stroke="#e5e7eb"/>
+  <!-- Summary lines -->
+  <rect x="64" y="140" width="240" height="8" fill="#9ca3af"/>
+  <rect x="64" y="156" width="220" height="8" fill="#e5e7eb"/>
+  <rect x="64" y="172" width="200" height="8" fill="#e5e7eb"/>
+  <!-- Sidebar chips -->
+  <rect x="344" y="140" width="96" height="14" rx="7" fill="#111827"/>
+  <rect x="344" y="162" width="70" height="14" rx="7" fill="#4b5563"/>
+  <rect x="344" y="184" width="80" height="14" rx="7" fill="#6b7280"/>
+</svg>

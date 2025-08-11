@@ -1,28 +1,56 @@
 import type { Metadata } from "next";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import ClassicTemplate from "@/app/_components/templates/ClassicTemplate";
+import ModernTemplate from "@/app/_components/templates/ModernTemplate";
+import MinimalTemplate from "@/app/_components/templates/MinimalTemplate";
 
 export const metadata: Metadata = {
   title: "Exportar PDF | HireWerk",
 };
 
-export default async function ExportRenderPage() {
-  // TODO: carregar dados do currículo via Supabase com token
+type ResumeRow = {
+  id: string;
+  title: string;
+  data: any;
+  template_id: string | null;
+};
+
+export default async function ExportRenderPage(props: { params: Promise<{ id: string }> }) {
+  const { id } = await props.params;
+  const supabase = await getSupabaseServerClient();
+
+  // Carrega currículo
+  const { data: resume } = await supabase
+    .from("resumes")
+    .select("id,title,data,template_id")
+    .eq("id", id)
+    .single<ResumeRow>();
+
+  // Resolve slug do template: se template_id for UUID, buscar na tabela templates; senão tratar como slug.
+  let slug: string = "classic";
+  if (resume?.template_id) {
+    const maybeUuid = resume.template_id;
+    const { data: tpl } = await supabase
+      .from("templates")
+      .select("slug")
+      .eq("id", maybeUuid)
+      .single();
+    slug = (tpl?.slug || resume.template_id || "classic").toString().toLowerCase();
+  }
+
+  const Template = slug.includes("modern")
+    ? ModernTemplate
+    : slug.includes("minimal")
+    ? MinimalTemplate
+    : ClassicTemplate;
+
+  const data = resume?.data ?? { name: "", headline: "", summary: "", skills: [] };
+
   return (
     <main className="p-8 print:p-0">
       <section className="w-[794px] mx-auto bg-white text-black shadow print:shadow-none">
         <div className="px-[24mm] py-[18mm]">
-          <h1 className="text-[22pt] font-semibold leading-tight">Nome Completo</h1>
-          <div className="mt-1 text-[11pt] opacity-80">Profissão / Título</div>
-          <div className="mt-6 text-[10pt] leading-relaxed">
-            Resumo profissional. Esta é uma prévia A4 simplificada. O template final aplicará tipografia e layout específicos.
-          </div>
-          <div className="mt-8">
-            <div className="text-[11pt] font-semibold">Skills</div>
-            <div className="mt-4 flex flex-wrap gap-6 text-[10pt]">
-              <span>JavaScript</span>
-              <span>React</span>
-              <span>Node.js</span>
-            </div>
-          </div>
+          <Template data={data} />
         </div>
       </section>
       <style

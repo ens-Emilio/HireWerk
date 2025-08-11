@@ -1,10 +1,9 @@
-
 # HireWerk — Plano de Desenvolvimento
 
 ## 1 — Visão geral (MVP)
 - Criar conta/login (OAuth: Google/GitHub)
-- Criar/editar currículo via campos estruturados + seções livres
-- Escolher template visual (mín. 3 modelos)
+- Criar/editar currículo via campos estruturados + seções livres ✅
+- Escolher template visual (mín. 3 modelos) ✅
 - Gerar e baixar PDF
 - Salvar versões e exportar JSON
 
@@ -38,26 +37,26 @@
 ## 3 — Plano de desenvolvimento (Sprints)
 
 ### Sprint 0 — Setup & Infra
-- Criar repositório
+- Criar repositório ✅
 - Configurar TypeScript, ESLint, Prettier, Tailwind
-- Criar projeto Supabase e configurar
-- Boilerplate Next.js + Tailwind + Supabase
+- Criar projeto Supabase e configurar ✅
+- Boilerplate Next.js + Tailwind + Supabase ✅
 
-**Entrega:** app blank com login
+**Entrega:** app blank com login ✅
 
 ### Sprint 1 — Modelos + CRUD básico
-- Modelagem do banco (users, resumes, sections, templates, exports)
-- Endpoints CRUD de currículos
-- UI com formulário básico
+- Modelagem do banco (users, resumes, sections, templates, exports) ✅
+- Endpoints CRUD de currículos ✅
+- UI com formulário básico ✅
 
-**Entrega:** salvar/editar currículo
+**Entrega:** salvar/editar currículo ✅
 
 ### Sprint 2 — Templates & Preview
-- Implementar 2–3 templates responsivos
-- Preview em tempo real
+- Implementar 2–3 templates responsivos ✅
+- Preview em tempo real ✅
 - Versionamento
 
-**Entrega:** escolher template + preview
+**Entrega:** escolher template + preview ✅
 
 ### Sprint 3 — PDF & Auth UX
 - Geração de PDF via Puppeteer
