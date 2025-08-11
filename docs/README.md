@@ -2,6 +2,19 @@
 
 Documentação do projeto com base no plano em `plan.md`.
 
+## Status Atual
+
+- CRUD de currículos e templates ✅
+- Preview e escolha de template ✅
+- Exportação de PDF (GET/POST) ✅
+- Renderização SSR privada com token ✅
+- Histórico de exportações (`exports`) ✅
+- Versionamento automático + snapshots (`resume_versions`) ✅
+- Lixeira de currículos (restaurar, esvaziar, toasts, item no sidebar) ✅
+- Navegação por setas e atalhos (← →) ✅
+- Login social (Google/GitHub) ⏳
+- Exportação JSON ⏳
+
 ## Visão Geral (MVP)
 - Cadastro/Login (OAuth: Google/GitHub)
 - Criar/editar currículo via campos estruturados + seções livres
@@ -45,8 +58,16 @@ Documentação do projeto com base no plano em `plan.md`.
 - POST /api/resumes — criar currículo
 - GET /api/resumes/:id — obter currículo
 - PUT /api/resumes/:id — atualizar currículo
-- POST /api/resumes/:id/export/pdf — gerar PDF
+- GET /api/resumes/:id/export/pdf — gerar/baixar PDF (navegador)
+- POST /api/resumes/:id/export/pdf — gerar PDF programaticamente
 - GET /api/templates — listar templates
+
+### Fluxo de PDF
+
+- Rota SSR protegida: `/export/render/:id?token=...` (token assinado via `EXPORT_TOKEN_SECRET`)
+- Geração via Puppeteer-Core + `@sparticuz/chromium`
+- Endpoint GET retorna PDF inline com cabeçalhos adequados
+- Logs em `exports`: status, duração, erro, tamanho, checksum e `resume_version`
 
 ## Estrutura de Arquivos (Monorepo sugerido)
 ```
@@ -88,6 +109,22 @@ Documentação do projeto com base no plano em `plan.md`.
 - CSS com `@page` e media queries `print`
 - Pré-carregar fontes
 - Evitar carregamento dinâmico na renderização
+
+## Execução (Bun)
+
+No diretório `apps/web`:
+
+```bash
+bun install
+cp .env.example .env.local
+bun run dev
+```
+
+Variáveis relevantes:
+
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `EXPORT_TOKEN_SECRET`
+- `CHROME_PATH` ou `PUPPETEER_EXECUTABLE_PATH` (dev local para PDF)
 
 ## Segurança
 - Autenticação obrigatória nas APIs

@@ -83,13 +83,9 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
     return (
       <div className="hidden md:flex items-center gap-2">
         <a
-          href={resumeId ? `/templates?id=${resumeId}` : "/templates"}
-          className="inline-flex h-9 items-center justify-center rounded-md border border-border px-3 text-xs font-medium text-foreground hover:bg-foreground/10"
-        >
-          Templates
-        </a>
-        <a
-          href={`/export/render/${resumeId}`}
+          href={`/api/resumes/${resumeId}/export/pdf`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex h-9 items-center justify-center rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90 text-center"
         >
           Exportar PDF
@@ -158,7 +154,15 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
           ))}
         </select>
         <a
-          href={`/export/render/${resumeId}`}
+          href={resumeId ? `/templates?id=${resumeId}` : "/templates"}
+          className="inline-flex h-8 items-center justify-center rounded-md border border-border px-2 text-xs font-medium text-foreground hover:bg-foreground/10"
+        >
+          Templates
+        </a>
+        <a
+          href={`/api/resumes/${resumeId}/export/pdf`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex h-8 items-center justify-center rounded-md bg-accent px-2 text-xs font-medium text-white hover:bg-accent/90 text-center"
         >
           Exportar

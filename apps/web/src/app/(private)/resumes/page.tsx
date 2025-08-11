@@ -53,8 +53,8 @@ export default async function ResumesPage() {
       ) : (
         <Card className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-semibold text-foreground/80">Nenhum currículo ainda</div>
-            <div className="mt-1 text-foreground">Crie seu primeiro currículo para começar.</div>
+            <div className="text-sm font-semibold text-black">Nenhum currículo ainda</div>
+            <div className="mt-1 text-black/80">Crie seu primeiro currículo para começar.</div>
           </div>
           <form action={createResume}>
             <Button variant="primary" size="md" type="submit">

@@ -75,6 +75,13 @@ on public.exports for insert
 to authenticated
 with check (user_id = auth.uid());
 
+drop policy if exists exports_owner_update on public.exports;
+create policy exports_owner_update
+on public.exports for update
+to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
+
 -- Trigger para criar public.users na inscrição
 create or replace function public.handle_new_user()
 returns trigger

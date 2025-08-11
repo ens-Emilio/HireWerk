@@ -116,8 +116,8 @@ export default function Editor({
       <div className="mb-2 flex justify-end">
         <CurrentContext variant="header" />
       </div>
-      <div className="grid gap-6 lg:grid-cols-[480px_1fr] text-foreground">
-        <div className="grid gap-4">
+      <div className="grid gap-6 lg:grid-cols-[480px_minmax(0,1fr)] text-foreground">
+        <div className="grid gap-4 min-w-0">
           <div className="grid gap-2">
             <label className="text-sm text-foreground">Título</label>
             <input
@@ -178,9 +178,9 @@ export default function Editor({
             {errorMsg ? ` • ${errorMsg}` : ""}
           </div>
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="mb-2 text-sm font-medium text-foreground/70">Prévia</div>
-          <div className="rounded-lg border border-border bg-white p-6 text-black">
+          <div className="rounded-lg border border-border bg-white p-6 text-black w-full max-w-[440px]">
             <TemplateComp data={data} />
           </div>
         </div>

@@ -30,23 +30,16 @@ export default async function Header() {
               </>
             )}
           </nav>
-          {/* Navegação mobile simples com details/summary */}
-          <details className="md:hidden">
-            <summary className="cursor-pointer text-sm text-primary-foreground/90">Menu</summary>
-            <nav className="mt-2 grid gap-2 text-sm text-primary-foreground/90">
-              {user ? (
-                <>
-                  <Link href="/dashboard" className="hover:underline">Dashboard</Link>
-                  <Link href="/resumes" className="hover:underline">Currículos</Link>
-                </>
-              ) : (
-                <>
-                  <a href="#recursos" className="hover:underline">Recursos</a>
-                  <a href="#como-funciona" className="hover:underline">Como funciona</a>
-                </>
-              )}
-            </nav>
-          </details>
+          {/* Navegação mobile (somente público, rotas autenticadas usam MobileNav) */}
+          {!user && (
+            <details className="md:hidden">
+              <summary className="cursor-pointer text-sm text-primary-foreground/90">Menu</summary>
+              <nav className="mt-2 grid gap-2 text-sm text-primary-foreground/90">
+                <a href="#recursos" className="hover:underline">Recursos</a>
+                <a href="#como-funciona" className="hover:underline">Como funciona</a>
+              </nav>
+            </details>
+          )}
         </div>
         <nav className="flex items-center gap-3 text-sm">
           {user ? (

@@ -4,10 +4,52 @@
 - Criar conta/login (OAuth: Google/GitHub)
 - Criar/editar currículo via campos estruturados + seções livres ✅
 - Escolher template visual (mín. 3 modelos) ✅
-- Gerar e baixar PDF
+- Gerar e baixar PDF ✅
 - Salvar versões e exportar JSON
 
 ---
+
+## Status & Checklist
+
+- **Exportação PDF**
+  - [x] GET `/api/resumes/[id]/export/pdf`
+  - [x] POST `/api/resumes/[id]/export/pdf`
+  - [x] Render SSR `/export/render/[id]` com token assinado
+  - [x] Logging em `exports` (status, erro, duração, tamanho, checksum)
+  - [ ] Armazenar PDF no Supabase Storage (`storage_path`)
+  - [ ] Boas práticas finais (fontes, `@page`, `@media print`)
+
+- **Versionamento**
+  - [x] Trigger para incremento automático de `resumes.version`
+  - [x] Snapshot em `resume_versions` (AFTER UPDATE)
+  - [x] `exports.resume_version` gravado nas exportações
+
+- **Navegação**
+  - [x] Setas de navegação visuais em `@/app/_components/NavArrows`
+  - [x] Atalhos de teclado ← → com detecção de foco para ignorar inputs/textarea/select/contenteditable
+  - [x] Fluxo ajustado entre páginas principais (Dashboard, Resumes, Resume editor, Templates, Trash, Settings)
+  - [ ] Acessibilidade adicional (aria-labels, foco visível) e testes E2E
+
+- **Lixeira**
+  - [x] Página `/resumes/trash` com restauração
+  - [x] Esvaziar lixeira (delete permanente) via server action `emptyTrash`
+  - [x] Toasts e item "Lixeira" no sidebar
+  - [ ] Modal de confirmação para "Esvaziar lixeira"
+
+- **Correções**
+  - [x] Import de `MobileNav` corrigido para alias `@/app/_components/MobileNav`
+  - [x] Rota de PDF: retorno via `ReadableStream` com `NextResponse` (compatibilidade de tipos)
+
+- **Backlog imediato**
+  - [ ] Exportar currículo em JSON
+  - [ ] Login social (Google/GitHub)
+  - [ ] Testes/CI para rotas, geração de PDF e navegação
+  - [ ] Modal de confirmação para esvaziar lixeira
+  - [ ] Acessibilidade das setas/atalhos (aria, foco, e2e)
+
+- **Próxima entrega**
+  - Exportação JSON de currículo
+
 
 ## 2 — Stack sugerido
 
@@ -37,29 +79,29 @@
 ## 3 — Plano de desenvolvimento (Sprints)
 
 ### Sprint 0 — Setup & Infra
-- Criar repositório ✅
+- Criar repositório 
 - Configurar TypeScript, ESLint, Prettier, Tailwind
-- Criar projeto Supabase e configurar ✅
-- Boilerplate Next.js + Tailwind + Supabase ✅
+- Criar projeto Supabase e configurar 
+- Boilerplate Next.js + Tailwind + Supabase 
 
-**Entrega:** app blank com login ✅
+**Entrega:** app blank com login 
 
 ### Sprint 1 — Modelos + CRUD básico
-- Modelagem do banco (users, resumes, sections, templates, exports) ✅
-- Endpoints CRUD de currículos ✅
-- UI com formulário básico ✅
+- Modelagem do banco (users, resumes, sections, templates, exports) 
+- Endpoints CRUD de currículos 
+- UI com formulário básico 
 
-**Entrega:** salvar/editar currículo ✅
+**Entrega:** salvar/editar currículo 
 
 ### Sprint 2 — Templates & Preview
-- Implementar 2–3 templates responsivos ✅
-- Preview em tempo real ✅
+- Implementar 2–3 templates responsivos 
+- Preview em tempo real 
 - Versionamento
 
-**Entrega:** escolher template + preview ✅
+**Entrega:** escolher template + preview 
 
 ### Sprint 3 — PDF & Auth UX
-- Geração de PDF via Puppeteer
+- Geração de PDF via Puppeteer 
 - Login social (Google/GitHub)
 - Testes e CI
 
@@ -83,7 +125,7 @@ email text
 name text
 avatar_url text
 created_at timestamp
-````
+```
 
 **Tabela: resumes**
 
@@ -116,6 +158,12 @@ id uuid PK
 resume_id uuid FK
 user_id uuid FK
 format text
+engine text
+status text -- running | succeeded | failed
+error text
+duration_ms integer
+size_bytes integer
+checksum text
 storage_path text
 created_at timestamp
 ```
@@ -128,7 +176,9 @@ created_at timestamp
 * `POST /api/resumes` — criar currículo
 * `GET /api/resumes/:id` — obter currículo
 * `PUT /api/resumes/:id` — atualizar currículo
-* `POST /api/resumes/:id/export/pdf` — gerar PDF
+* `GET /api/resumes/:id/export/pdf` — gerar/baixar PDF (fluxo via navegador)
+* `POST /api/resumes/:id/export/pdf` — gerar PDF programaticamente (server-to-server)
+* `GET /export/render/:id?token=...` — render privado SSR para geração de PDF
 * `GET /api/templates` — listar templates
 
 ---
