@@ -1,9 +1,18 @@
 "use client";
-import { useCallback, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-foreground/70">Carregando…</div>}>
+      <InnerLoginPage />
+    </Suspense>
+  );
+}
+
+function InnerLoginPage() {
   const searchParams = useSearchParams();
   const nextParam = (searchParams.get("next") || "").toString();
   const [email, setEmail] = useState("");
@@ -47,7 +56,11 @@ export default function LoginPage() {
       console.log("[login] supabase.signInWithPassword:call");
       const { error } = await supabase.auth.signInWithPassword({ email: emailInput, password: passwordInput });
       if (error) {
-        const status = (error as any)?.status;
+        let status: number | undefined;
+        if (typeof error === "object" && error !== null && "status" in error) {
+          const s = (error as { status?: unknown }).status;
+          if (typeof s === "number") status = s;
+        }
         const msg = (error.message || "").toLowerCase();
         console.error("[login] supabase.signInWithPassword:error", { name: error.name, message: error.message, status });
         if (status === 400) {
@@ -109,8 +122,18 @@ export default function LoginPage() {
         options: { emailRedirectTo },
       });
       if (error) {
-        const status = (error as any)?.status;
-        const code = (error as any)?.code;
+        let status: number | undefined;
+        let code: string | number | undefined;
+        if (typeof error === "object" && error !== null) {
+          if ("status" in error) {
+            const s = (error as { status?: unknown }).status;
+            if (typeof s === "number") status = s;
+          }
+          if ("code" in error) {
+            const c = (error as { code?: unknown }).code;
+            if (typeof c === "string" || typeof c === "number") code = c;
+          }
+        }
         const msg = (error.message || "").toLowerCase();
         const already = status === 422 || msg.includes("already registered") || msg.includes("already exists") || msg.includes("user already") || msg.includes("exists");
         if (already) {
@@ -133,19 +156,19 @@ export default function LoginPage() {
       console.log("[login] signUpWithPassword:end");
       setLoading(false);
     }
-  }, [email, password, nextParam]);
+  }, [email, password, nextParam, emailValid]);
 
   // Link mágico removido conforme preferência do usuário
 
   return (
     <main className="min-h-dvh flex items-center justify-center p-6 bg-background">
       <div className="w-full max-w-sm rounded-xl border border-border bg-white p-6 shadow-sm text-black">
-        <a href="/" className="mb-4 inline-flex items-center gap-2 text-sm text-accent hover:underline">
+        <Link href="/" className="mb-4 inline-flex items-center gap-2 text-sm text-accent hover:underline">
           <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
           Voltar ao início
-        </a>
+        </Link>
         <h1 className="mb-2 text-xl font-semibold text-primary">Entrar no HireWerk</h1>
         <p className="mb-6 text-sm text-primary/80">Use e-mail e senha para acessar sua conta.</p>
 
@@ -213,12 +236,12 @@ export default function LoginPage() {
               Criar conta
             </button>
           </div>
-          <a
+          <Link
             href="/forgot-password"
             className="text-sm text-accent hover:underline justify-self-end"
           >
             Esqueci minha senha
-          </a>
+          </Link>
         </div>
       </div>
     </main>

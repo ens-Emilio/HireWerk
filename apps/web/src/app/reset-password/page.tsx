@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -55,12 +56,12 @@ function InnerResetPassword() {
   return (
     <main className="min-h-dvh flex items-center justify-center p-6 bg-background">
       <form onSubmit={onSubmit} className="w-full max-w-sm rounded-xl border border-border bg-white p-6 shadow-sm text-black">
-        <a href="/" className="mb-4 inline-flex items-center gap-2 text-sm text-accent hover:underline">
+        <Link href="/" className="mb-4 inline-flex items-center gap-2 text-sm text-accent hover:underline">
           <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
           Voltar ao início
-        </a>
+        </Link>
         <h1 className="mb-2 text-xl font-semibold text-primary">Redefinir senha</h1>
         <p className="mb-6 text-sm text-primary/80">Defina uma nova senha para sua conta.</p>
 

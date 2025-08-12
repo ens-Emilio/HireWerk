@@ -2,6 +2,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import A4Preview from "@/app/_components/A4Preview";
+import Link from "next/link";
 
 export default async function Home() {
   const supabase = await getSupabaseServerClient();
@@ -21,9 +22,9 @@ export default async function Home() {
               Escolha um template bonito, edite campos estruturados e baixe em PDF. Simples, rápido e gratuito no MVP.
             </p>
             <div className="mt-6 flex gap-3">
-              <a href={ctaHref}>
+              <Link href={ctaHref}>
                 <Button size="lg" variant="primary">Começar agora</Button>
-              </a>
+              </Link>
               <a href="#como-funciona">
                 <Button size="lg" variant="outline">Ver como funciona</Button>
               </a>

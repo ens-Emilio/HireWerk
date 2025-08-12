@@ -8,7 +8,12 @@ export async function POST(request: Request) {
   const supabase = await getSupabaseServerClient();
   const { error } = await supabase.auth.signOut();
   if (error) {
-    console.error("[auth/signout] error", { name: error.name, message: error.message, status: (error as any)?.status });
+    let status: number | undefined;
+    if (typeof error === "object" && error !== null && "status" in error) {
+      const s = (error as { status?: unknown }).status;
+      if (typeof s === "number") status = s;
+    }
+    console.error("[auth/signout] error", { name: error.name, message: error.message, status });
   } else {
     console.log("[auth/signout] success");
   }

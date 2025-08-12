@@ -41,8 +41,9 @@ export default function UpdatePasswordForm() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirm("");
-    } catch (err: any) {
-      toast.error(err?.message || "Erro ao atualizar senha.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro ao atualizar senha.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

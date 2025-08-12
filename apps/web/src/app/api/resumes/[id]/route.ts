@@ -19,7 +19,8 @@ export async function GET(
   if (error || !data) return NextResponse.json({ ok: false }, { status: 404 });
   if (data.user_id !== auth.user.id) return NextResponse.json({ ok: false }, { status: 403 });
 
-  const { user_id, ...item } = data;
+  const { user_id: _user_id, ...item } = data as { user_id: string } & Record<string, unknown>;
+  void _user_id; // omitido da resposta
   return NextResponse.json({ item });
 }
 

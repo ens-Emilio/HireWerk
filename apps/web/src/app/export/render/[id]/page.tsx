@@ -12,10 +12,31 @@ export const metadata: Metadata = {
 type ResumeRow = {
   id: string;
   title: string;
-  data: any;
+  data: unknown;
   template_id: string | null;
   user_id: string;
 };
+
+type ResumeData = {
+  name?: string;
+  headline?: string;
+  summary?: string;
+  skills?: string[];
+};
+
+function toResumeData(v: unknown): ResumeData {
+  if (typeof v !== "object" || v === null) {
+    return { name: "", headline: "", summary: "", skills: [] };
+  }
+  const obj = v as Record<string, unknown>;
+  const name = typeof obj.name === "string" ? obj.name : "";
+  const headline = typeof obj.headline === "string" ? obj.headline : "";
+  const summary = typeof obj.summary === "string" ? obj.summary : "";
+  const skills = Array.isArray(obj.skills)
+    ? obj.skills.filter((s): s is string => typeof s === "string")
+    : [];
+  return { name, headline, summary, skills };
+}
 
 export default async function ExportRenderPage(props: {
   params: Promise<{ id: string }>;
@@ -74,7 +95,7 @@ export default async function ExportRenderPage(props: {
     ? MinimalTemplate
     : ClassicTemplate;
 
-  const data = resume?.data ?? { name: "", headline: "", summary: "", skills: [] };
+  const data = toResumeData(resume?.data);
 
   return (
     <main className="p-8 print:p-0">

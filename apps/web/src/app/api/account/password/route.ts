@@ -34,7 +34,11 @@ export async function POST(req: Request) {
       password: currentPassword,
     });
     if (signInErr) {
-      const status = (signInErr as any)?.status;
+      let status: number | undefined;
+      if (typeof signInErr === "object" && signInErr !== null && "status" in signInErr) {
+        const s = (signInErr as { status?: unknown }).status;
+        if (typeof s === "number") status = s;
+      }
       return NextResponse.json(
         { error: status === 400 ? "Senha atual incorreta" : signInErr.message || "Não foi possível verificar a senha atual" },
         { status: 400 }
@@ -48,7 +52,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Erro interno" }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Erro interno";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

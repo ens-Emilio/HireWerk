@@ -35,8 +35,9 @@ export default function UpdateEmailForm({ currentEmail }: { currentEmail: string
       toast.success("Solicitação enviada. Verifique seu e-mail para confirmar a alteração.");
       setEmail("");
       setConfirm("");
-    } catch (err: any) {
-      toast.error(err?.message || "Erro ao atualizar e-mail.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro ao atualizar e-mail.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

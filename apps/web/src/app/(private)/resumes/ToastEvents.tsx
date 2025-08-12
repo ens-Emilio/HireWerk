@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 export default function ToastEvents() {
+  return (
+    <Suspense fallback={null}>
+      <InnerToastEvents />
+    </Suspense>
+  );
+}
+
+function InnerToastEvents() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();

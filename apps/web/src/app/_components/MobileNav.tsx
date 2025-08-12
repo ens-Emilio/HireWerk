@@ -2,15 +2,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const items = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/resumes", label: "Currículos" },
-  { href: "/settings", label: "Conta" },
-];
-
 export default function MobileNav() {
   const pathname = usePathname() || "";
   const hidden = pathname.startsWith("/login") || pathname.startsWith("/check-email") || pathname.startsWith("/forgot-password") || pathname.startsWith("/reset-password");
+  const resumeId = (() => {
+    const m = pathname.match(/^\/resumes\/([^\/?#]+)/);
+    return m?.[1] ?? null;
+  })();
+
+  const items = [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/resumes", label: "Currículos" },
+    { href: resumeId ? `/templates?id=${resumeId}` : "/templates", label: "Templates" },
+    { href: "/settings", label: "Conta" },
+  ];
 
   return (
     <nav
@@ -18,9 +23,13 @@ export default function MobileNav() {
       className={`lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-[var(--color-surface)] text-[var(--color-surface-foreground)] ${hidden ? "hidden" : ""}`}
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0px)" }}
     >
-      <ul className="mx-auto max-w-6xl grid grid-cols-3">
+      <ul
+        className="mx-auto max-w-6xl grid"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
         {items.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const baseHref = item.href.split("?")[0];
+          const isActive = pathname === baseHref || pathname.startsWith(baseHref + "/");
           return (
             <li key={item.href} className="flex">
               <Link

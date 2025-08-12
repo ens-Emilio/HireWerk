@@ -4,6 +4,7 @@ import { restoreResume, emptyTrash } from "../actions";
 import { Button } from "@/components/ui/Button";
 import ToastEvents from "../ToastEvents";
 import { Card } from "@/components/ui/Card";
+import ConfirmEmptyTrash from "./ConfirmEmptyTrash";
 
 export default async function TrashResumesPage() {
   const supabase = await getSupabaseServerClient();
@@ -20,11 +21,7 @@ export default async function TrashResumesPage() {
         <h1 className="text-2xl font-semibold text-foreground">Lixeira</h1>
         <div className="flex items-center gap-3">
           {data && data.length > 0 ? (
-            <form action={emptyTrash}>
-              <Button variant="danger" size="sm" type="submit">
-                Esvaziar lixeira
-              </Button>
-            </form>
+            <ConfirmEmptyTrash action={emptyTrash} />
           ) : null}
           <Link href="/resumes" className="text-sm text-foreground hover:underline">
             Voltar para currículos

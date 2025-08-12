@@ -1,9 +1,18 @@
 "use client";
-import { useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 export default function CheckEmailPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-foreground/70">Carregando…</div>}>
+      <InnerCheckEmailPage />
+    </Suspense>
+  );
+}
+
+function InnerCheckEmailPage() {
   const searchParams = useSearchParams();
   const email = (searchParams.get("email") || "").toString();
   const nextParam = (searchParams.get("next") || "").toString();
@@ -31,15 +40,22 @@ export default function CheckEmailPage() {
       const emailRedirectTo = `${origin}/auth/callback?redirect=${encodeURIComponent(dest)}`;
 
       // Supabase v2 possui auth.resend para reenvio de confirmação
-      const resendFn = (supabase.auth as any)?.resend;
-      if (typeof resendFn === "function") {
+      const resendMaybe = (supabase.auth as { resend?: unknown }).resend;
+      if (typeof resendMaybe === "function") {
+        type ResendFn = (args: { type: string; email?: string; phone?: string; options?: { emailRedirectTo?: string } }) => Promise<{ error: { name: string; message: string } | null }>;
+        const resendFn: ResendFn = resendMaybe as ResendFn;
         const { error } = await resendFn({
           type: "signup",
           email,
           options: { emailRedirectTo },
         });
         if (error) {
-          console.error("[check-email] resend:error", { name: error.name, message: error.message, status: (error as any)?.status });
+          let status: number | undefined;
+          if (typeof error === "object" && error !== null && "status" in error) {
+            const s = (error as { status?: unknown }).status;
+            if (typeof s === "number") status = s;
+          }
+          console.error("[check-email] resend:error", { name: error.name, message: error.message, status });
           setMessage(error.message || "Falha ao reenviar e-mail. Tente novamente em instantes.");
           return;
         }
@@ -67,12 +83,12 @@ export default function CheckEmailPage() {
   return (
     <main className="min-h-dvh flex items-center justify-center p-6 bg-background">
       <div className="w-full max-w-sm rounded-xl border border-border bg-white p-6 shadow-sm text-black">
-        <a href="/" className="mb-4 inline-flex items-center gap-2 text-sm text-accent hover:underline">
+        <Link href="/" className="mb-4 inline-flex items-center gap-2 text-sm text-accent hover:underline">
           <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
           Voltar ao início
-        </a>
+        </Link>
 
         <h1 className="mb-2 text-xl font-semibold text-primary">Confirme seu e-mail</h1>
         <p className="mb-4 text-sm text-primary/80">
@@ -104,10 +120,10 @@ export default function CheckEmailPage() {
           </div>
 
           <div className="mt-4 grid gap-2">
-            <a href={loginHref} className="text-sm text-accent hover:underline">Voltar ao login</a>
-            <a href="/forgot-password" className="text-sm text-accent hover:underline">Esqueci minha senha</a>
+            <Link href={loginHref} className="text-sm text-accent hover:underline">Voltar ao login</Link>
+            <Link href="/forgot-password" className="text-sm text-accent hover:underline">Esqueci minha senha</Link>
             {nextParam ? (
-              <a href={nextParam} className="text-sm text-accent hover:underline">Ir para o destino após confirmar</a>
+              <Link href={nextParam} className="text-sm text-accent hover:underline">Ir para o destino após confirmar</Link>
             ) : null}
           </div>
         </div>

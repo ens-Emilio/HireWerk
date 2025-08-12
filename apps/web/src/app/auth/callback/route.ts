@@ -17,7 +17,12 @@ export async function GET(request: Request) {
   const supabase = await getSupabaseServerClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    console.error("[auth/callback] exchange:error", { name: error.name, message: error.message, status: (error as any)?.status });
+    let status: number | undefined;
+    if (typeof error === "object" && error !== null && "status" in error) {
+      const s = (error as { status?: unknown }).status;
+      if (typeof s === "number") status = s;
+    }
+    console.error("[auth/callback] exchange:error", { name: error.name, message: error.message, status });
     return NextResponse.redirect(new URL("/login?error=session", request.url));
   }
 

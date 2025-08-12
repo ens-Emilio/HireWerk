@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-export function middleware(_req: NextRequest) {
-  const res = NextResponse.next();
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next({ request: { headers: req.headers } });
 
   // Proteções básicas
   res.headers.set("X-Frame-Options", "DENY");
@@ -29,6 +30,34 @@ export function middleware(_req: NextRequest) {
     "Strict-Transport-Security",
     "max-age=63072000; includeSubDomains; preload"
   );
+
+  // Auth gating para rotas privadas
+  const pathname = req.nextUrl.pathname;
+  const isPrivate = /^(?:\/dashboard|\/resumes|\/templates|\/settings)(?:\/|$)/.test(pathname);
+  if (isPrivate) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookies) {
+          cookies.forEach(({ name, value, options }) => {
+            res.cookies.set({ name, value, ...options });
+          });
+        },
+      },
+    });
+
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/login";
+      url.searchParams.set("redirect", req.nextUrl.pathname + req.nextUrl.search);
+      return NextResponse.redirect(url);
+    }
+  }
 
   return res;
 }

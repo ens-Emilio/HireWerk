@@ -1,9 +1,17 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 
 export default function NavArrows() {
+  return (
+    <Suspense fallback={null}>
+      <InnerNavArrows />
+    </Suspense>
+  );
+}
+
+function InnerNavArrows() {
   const pathname = usePathname() || "";
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -38,7 +46,8 @@ export default function NavArrows() {
     rightHref = "/resumes";
   }
 
-  const btn = "inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-sm hover:bg-foreground/10 disabled:opacity-40 disabled:pointer-events-none";
+  const btn =
+    "inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-sm hover:bg-foreground/10 disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ring-offset-background";
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -61,25 +70,37 @@ export default function NavArrows() {
   }, [leftHref, rightHref, router]);
 
   return (
-    <div className="mb-3 flex items-center justify-between">
+    <div className="mb-3 flex items-center justify-between" role="navigation" aria-label="Navegação por setas">
       <div>
         {leftHref ? (
-          <Link href={leftHref} className={btn} aria-label="Voltar" title="Voltar (←)">
+          <Link
+            href={leftHref}
+            className={btn}
+            aria-label="Voltar"
+            aria-keyshortcuts="ArrowLeft"
+            title="Voltar (←)"
+          >
             ←
           </Link>
         ) : (
-          <button className={btn} aria-label="Voltar" title="Voltar (←)" disabled>
+          <button className={btn} aria-label="Voltar" aria-keyshortcuts="ArrowLeft" title="Voltar (←)" disabled>
             ←
           </button>
         )}
       </div>
       <div>
         {rightHref ? (
-          <Link href={rightHref} className={btn} aria-label="Avançar" title="Avançar (→)">
+          <Link
+            href={rightHref}
+            className={btn}
+            aria-label="Avançar"
+            aria-keyshortcuts="ArrowRight"
+            title="Avançar (→)"
+          >
             →
           </Link>
         ) : (
-          <button className={btn} aria-label="Avançar" title="Avançar (→)" disabled>
+          <button className={btn} aria-label="Avançar" aria-keyshortcuts="ArrowRight" title="Avançar (→)" disabled>
             →
           </button>
         )}

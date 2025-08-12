@@ -16,8 +16,14 @@
   - [x] POST `/api/resumes/[id]/export/pdf`
   - [x] Render SSR `/export/render/[id]` com token assinado
   - [x] Logging em `exports` (status, erro, duração, tamanho, checksum)
-  - [ ] Armazenar PDF no Supabase Storage (`storage_path`)
+  - [x] Armazenar PDF no Supabase Storage (`storage_path`)
   - [ ] Boas práticas finais (fontes, `@page`, `@media print`)
+
+- **Exportação JSON**
+  - [x] GET `/api/resumes/[id]/export/json`
+  - [x] POST `/api/resumes/[id]/export/json`
+  - [x] Logging em `exports` (status, duração, tamanho, checksum)
+  - [x] Links na UI em `@/app/_components/CurrentContext`
 
 - **Versionamento**
   - [x] Trigger para incremento automático de `resumes.version`
@@ -34,21 +40,21 @@
   - [x] Página `/resumes/trash` com restauração
   - [x] Esvaziar lixeira (delete permanente) via server action `emptyTrash`
   - [x] Toasts e item "Lixeira" no sidebar
-  - [ ] Modal de confirmação para "Esvaziar lixeira"
+  - [x] Modal de confirmação para "Esvaziar lixeira"
 
 - **Correções**
   - [x] Import de `MobileNav` corrigido para alias `@/app/_components/MobileNav`
   - [x] Rota de PDF: retorno via `ReadableStream` com `NextResponse` (compatibilidade de tipos)
 
 - **Backlog imediato**
-  - [ ] Exportar currículo em JSON
+  - [x] Exportar currículo em JSON
   - [ ] Login social (Google/GitHub)
-  - [ ] Testes/CI para rotas, geração de PDF e navegação
-  - [ ] Modal de confirmação para esvaziar lixeira
+  - [ ] Testes/CI para rotas, geração de PDF e navegação (Jest para unitários/integrados; Playwright para E2E)
+  - [x] Modal de confirmação para esvaziar lixeira
   - [ ] Acessibilidade das setas/atalhos (aria, foco, e2e)
 
 - **Próxima entrega**
-  - Exportação JSON de currículo
+  - Login social (Google/GitHub)
 
 
 ## 2 — Stack sugerido
@@ -178,6 +184,8 @@ created_at timestamp
 * `PUT /api/resumes/:id` — atualizar currículo
 * `GET /api/resumes/:id/export/pdf` — gerar/baixar PDF (fluxo via navegador)
 * `POST /api/resumes/:id/export/pdf` — gerar PDF programaticamente (server-to-server)
+* `GET /api/resumes/:id/export/json` — baixar JSON do currículo
+* `POST /api/resumes/:id/export/json` — exportar JSON programaticamente
 * `GET /export/render/:id?token=...` — render privado SSR para geração de PDF
 * `GET /api/templates` — listar templates
 

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { signExportToken } from "@/lib/exportToken";
-import chromium from "@sparticuz/chromium";
-import puppeteer from "puppeteer-core";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -14,9 +12,10 @@ export async function GET(
   ctx: { params: Promise<{ id: string }> }
 ) {
   // Variáveis usadas para logging e no catch
-  let supabase: any = null;
+  let supabase: Awaited<ReturnType<typeof getSupabaseServerClient>> | null = null;
   let exportId: string | null = null;
   let start: number | null = null;
+  let storagePath: string | null = null;
   try {
     const { id } = await ctx.params;
     supabase = await getSupabaseServerClient();
@@ -63,6 +62,10 @@ export async function GET(
       // ignora falha de logging para não quebrar exportação
     }
 
+    // Carrega dependências pesadas sob demanda para evitar custo no startup do dev server
+    const { default: chromium } = await import("@sparticuz/chromium");
+    const { default: puppeteer } = await import("puppeteer-core");
+
     // Inicializa o Chromium
     const ep = await chromium.executablePath();
     const localAppData = process.env.LOCALAPPDATA;
@@ -85,6 +88,8 @@ export async function GET(
       "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
       "C:/Program Files/Microsoft/Edge/Application/msedge.exe",
       "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+      // Caminho específico verificado via PowerShell
+      "C:/Program Files/Google/Chrome/Application/chrome.exe",
       // Por último, o caminho do pacote chromium (pode ser dir temporário em dev)
       ep,
     ].filter(Boolean) as string[];
@@ -163,6 +168,7 @@ export async function GET(
         content: `
           html, body, main { background: #fff !important; }
           body { margin: 0 !important; }
+          @page { size: A4; margin: 0 }
           header, nav, footer,
           .site-header, .app-header, .topbar, .navbar,
           [data-site-header], [data-region="topbar"], .no-print {
@@ -196,6 +202,21 @@ export async function GET(
         format: "A4",
         margin: { top: 0, right: 0, bottom: 0, left: 0 },
       });
+
+      // Tenta salvar no Supabase Storage (opcional). Ignora falhas sem quebrar a resposta.
+      try {
+        const bucket = process.env.SUPABASE_PDF_BUCKET || "exports";
+        const fileName = `${auth.user.id}/${id}/${(exportId ?? crypto.randomUUID())}.pdf`;
+        const { data: up, error: upErr } = await supabase.storage
+          .from(bucket)
+          .upload(fileName, pdfBuffer, {
+            contentType: "application/pdf",
+            upsert: true,
+          });
+        if (!upErr && up?.path) {
+          storagePath = `${bucket}/${up.path}`;
+        }
+      } catch {}
       // Atualiza registro de exportação como sucedido
       try {
         const durationMs = typeof start === "number" ? Date.now() - start : null;
@@ -213,6 +234,7 @@ export async function GET(
               ...(durationMs !== null ? { duration_ms: durationMs } : {}),
               size_bytes: pdfBuffer.length,
               checksum,
+              ...(storagePath ? { storage_path: storagePath } : {}),
             })
             .eq("id", exportId);
         }
@@ -239,7 +261,7 @@ export async function GET(
   } catch (error) {
     console.error("Erro ao exportar PDF:", error);
     try {
-      if (typeof exportId === "string") {
+      if (supabase && typeof exportId === "string") {
         const durationMs = typeof start === "number" ? Date.now() - start : null;
         await supabase
           .from("exports")

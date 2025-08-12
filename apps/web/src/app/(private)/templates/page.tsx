@@ -18,8 +18,9 @@ export default function TemplatesPage() {
         if (!res.ok) throw new Error("Falha ao carregar templates");
         const json = await res.json();
         if (alive) setItems(Array.isArray(json.items) ? json.items : []);
-      } catch (e: any) {
-        if (alive) setErr(e?.message || "Erro ao listar templates");
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : "Erro ao listar templates";
+        if (alive) setErr(message);
       } finally {
         if (alive) setLoading(false);
       }
@@ -45,8 +46,9 @@ export default function TemplatesPage() {
       if (!res.ok) throw new Error("Falha ao aplicar template");
       // Redireciona de volta ao editor do currículo
       window.location.href = `/resumes/${currentResumeId}`;
-    } catch (e: any) {
-      setErr(e?.message || "Erro ao aplicar template");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Erro ao aplicar template";
+      setErr(message);
     } finally {
       setUsing(null);
     }
@@ -77,6 +79,7 @@ export default function TemplatesPage() {
         )}
         {items.map((tpl) => (
           <div key={tpl.id} className="rounded-lg border border-border bg-background p-3 text-foreground">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={tpl.preview_image_url ?? `/templates/${tpl.slug}.svg`}
               alt={`${tpl.name} preview`}

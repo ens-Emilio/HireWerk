@@ -81,21 +81,37 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
 
   if (variant === "header") {
     return (
-      <div className="hidden md:flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <a
+          href={resumeId ? `/templates?id=${resumeId}` : "/templates"}
+          className="inline-flex h-9 items-center justify-center rounded-md border border-border px-3 text-xs font-medium text-foreground hover:bg-foreground/10"
+          aria-label="Abrir Templates"
+        >
+          Templates
+        </a>
         <a
           href={`/api/resumes/${resumeId}/export/pdf`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex h-9 items-center justify-center rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90 text-center"
+          aria-label="Exportar PDF"
         >
           Exportar PDF
+        </a>
+        <a
+          href={`/api/resumes/${resumeId}/export/json`}
+          className="inline-flex h-9 items-center justify-center rounded-md border border-border px-3 text-xs font-medium text-foreground hover:bg-foreground/10"
+          aria-label="Exportar JSON"
+        >
+          Exportar JSON
         </a>
         <select
           value={resume?.template_id ?? ""}
           onChange={onChangeTemplate}
           disabled={loading || saving}
-          className="h-9 rounded-md border border-border bg-surface px-2 text-xs text-foreground"
+          className="hidden md:inline-block h-9 rounded-md border border-border bg-surface px-2 text-xs text-foreground"
           style={{ colorScheme: "dark" }}
+          aria-label="Selecionar template"
         >
           <option
             value=""
@@ -165,7 +181,13 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
           rel="noopener noreferrer"
           className="inline-flex h-8 items-center justify-center rounded-md bg-accent px-2 text-xs font-medium text-white hover:bg-accent/90 text-center"
         >
-          Exportar
+          Exportar PDF
+        </a>
+        <a
+          href={`/api/resumes/${resumeId}/export/json`}
+          className="inline-flex h-8 items-center justify-center rounded-md border border-border px-2 text-xs font-medium text-foreground hover:bg-foreground/10"
+        >
+          Exportar JSON
         </a>
       </div>
     </div>
