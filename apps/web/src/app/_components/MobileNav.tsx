@@ -20,7 +20,7 @@ export default function MobileNav() {
   return (
     <nav
       aria-label="Navegação"
-      className={`lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-[var(--color-surface)] text-[var(--color-surface-foreground)] ${hidden ? "hidden" : ""}`}
+      className={`lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-surface text-surface-foreground ${hidden ? "hidden" : ""}`}
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0px)" }}
     >
       <ul

@@ -30,7 +30,7 @@ export default function HeaderAuth() {
   if (loading) {
     return (
       <nav className="flex items-center gap-3 text-sm" aria-label="Ações de conta">
-        <div className="h-9 w-16 rounded-md bg-white/10 animate-pulse" />
+        <div className="h-9 w-16 rounded-md bg-foreground/10 animate-pulse" />
       </nav>
     );
   }
@@ -40,7 +40,7 @@ export default function HeaderAuth() {
       <nav className="flex items-center gap-3 text-sm" aria-label="Ações de conta">
         <Link
           href="/login"
-          className="inline-flex h-9 items-center justify-center rounded-md bg-accent px-3 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+          className="inline-flex h-9 items-center justify-center rounded-md bg-accent px-3 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
         >
           Entrar
         </Link>
@@ -50,7 +50,7 @@ export default function HeaderAuth() {
 
   return (
     <nav className="flex items-center gap-3 text-sm" aria-label="Ações de conta">
-      <Link href="/settings" className="hidden sm:inline text-primary-foreground/70 hover:underline">
+      <Link href="/settings" className="hidden sm:inline text-white hover:underline">
         Conta
       </Link>
       <form action="/auth/signout" method="post">

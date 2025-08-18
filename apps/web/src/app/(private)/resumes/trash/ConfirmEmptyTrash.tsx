@@ -48,7 +48,7 @@ export default function ConfirmEmptyTrash({ action }: Props) {
       {open && (
         <div className="fixed inset-0 z-50">
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-foreground/50"
             aria-hidden="true"
             onClick={() => setOpen(false)}
           />
@@ -58,13 +58,13 @@ export default function ConfirmEmptyTrash({ action }: Props) {
               aria-modal="true"
               aria-labelledby={titleId}
               aria-describedby={`${titleId}-desc`}
-              className="bg-white text-black"
+              className="bg-background text-foreground"
             >
               <div className="space-y-4">
                 <div id={titleId} className="text-lg font-semibold">
                   Esvaziar lixeira
                 </div>
-                <p id={`${titleId}-desc`} className="text-sm text-black/80">
+                <p id={`${titleId}-desc`} className="text-sm text-foreground/80">
                   Tem certeza de que deseja esvaziar a lixeira? Esta ação é permanente e não pode ser desfeita.
                 </p>
                 <div className="flex justify-end gap-2 pt-2">

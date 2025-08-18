@@ -12,13 +12,13 @@ export default function Sidebar() {
   const nav = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/resumes", label: "Currículos" },
-    { href: "/resumes/trash", label: "Lixeira" },
     { href: resumeId ? `/templates?id=${resumeId}` : "/templates", label: "Templates" },
+    { href: "/resumes/trash", label: "Lixeira" },
     { href: "/settings", label: "Configurações" },
   ] as { href: string; label: string }[];
 
   return (
-    <aside className="app-sidebar h-dvh sticky top-0 overflow-y-auto border-r border-border bg-[var(--color-surface)] p-4 text-[var(--color-surface-foreground)]">
+    <aside className="app-sidebar h-dvh sticky top-0 overflow-y-auto border-r border-border bg-surface p-4 text-surface-foreground">
       <div className="mb-6 px-2 text-sm font-semibold opacity-90">Navegação</div>
       <nav className="grid gap-1">
         {nav.map((item) => {
@@ -36,7 +36,7 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className={`rounded-md px-2 py-1.5 text-sm text-[var(--color-surface-foreground)] hover:bg-foreground/10 ${
+              className={`rounded-md px-2 py-1.5 text-sm text-surface-foreground hover:bg-foreground/10 ${
                 isActive ? "bg-foreground/10 font-medium" : ""
               }`}
             >

@@ -7,7 +7,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
       <p className="text-sm text-foreground/70">{error.message || "Erro inesperado."}</p>
       <button
         onClick={() => reset()}
-        className="h-9 rounded-md bg-accent text-white px-3 text-sm hover:bg-accent/90"
+        className="h-9 rounded-md bg-accent text-accent-foreground px-3 text-sm hover:bg-accent/90"
       >
         Tentar novamente
       </button>

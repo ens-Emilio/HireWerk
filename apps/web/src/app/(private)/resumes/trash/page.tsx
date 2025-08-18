@@ -23,19 +23,19 @@ export default async function TrashResumesPage() {
           {data && data.length > 0 ? (
             <ConfirmEmptyTrash action={emptyTrash} />
           ) : null}
-          <Link href="/resumes" className="text-sm text-foreground hover:underline">
+          <Link href="/resumes" className="text-sm link">
             Voltar para currículos
           </Link>
         </div>
       </div>
 
       {data && data.length > 0 ? (
-        <ul className="divide-y divide-border rounded-md border border-border bg-white text-black">
+        <ul className="divide-y divide-border rounded-md border border-border bg-background text-foreground">
           {data.map((r) => (
             <li key={r.id} className="flex items-center justify-between px-4 py-3">
               <div>
                 <div className="font-medium">{r.title}</div>
-                <div className="text-xs text-black/70">
+                <div className="text-xs text-foreground/70">
                   Removido em {new Date(r.deleted_at as string).toLocaleString()}
                 </div>
               </div>
@@ -57,10 +57,10 @@ export default async function TrashResumesPage() {
       ) : (
         <Card className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-semibold text-black">Lixeira vazia</div>
-            <div className="mt-1 text-black/80">Nenhum currículo na lixeira.</div>
+            <div className="text-sm font-semibold text-foreground">Lixeira vazia</div>
+            <div className="mt-1 text-foreground/80">Nenhum currículo na lixeira.</div>
           </div>
-          <Link href="/resumes" className="text-sm text-blue-600 hover:underline">
+          <Link href="/resumes" className="text-sm link">
             Voltar para currículos
           </Link>
         </Card>

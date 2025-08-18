@@ -91,7 +91,7 @@ export default function TemplatesPage() {
               <button
                 onClick={() => applyTemplate(tpl.id)}
                 disabled={using === tpl.id}
-                className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+                className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
               >
                 {using === tpl.id ? "Aplicando…" : "Usar"}
               </button>

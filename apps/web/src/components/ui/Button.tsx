@@ -12,14 +12,19 @@ const base =
 
 const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary:
-    "bg-accent text-white hover:bg-accent/90 focus-visible:ring-accent ring-offset-background",
+    // CTA principal: azul
+    "bg-primary text-primary-foreground hover:bg-[--color-primary-hover] focus-visible:ring-primary ring-offset-background",
   secondary:
-    "bg-secondary text-primary-foreground hover:bg-secondary/90 focus-visible:ring-secondary ring-offset-background",
+    // Ação secundária: cinza neutro
+    "bg-secondary text-secondary-foreground hover:bg-secondary/90 focus-visible:ring-secondary ring-offset-background",
   outline:
-    "border border-border bg-transparent text-foreground hover:bg-foreground/10 focus-visible:ring-accent ring-offset-background",
+    // Neutro com borda
+    "border border-border bg-transparent text-foreground hover:bg-foreground/10 focus-visible:ring-primary ring-offset-background",
   ghost:
-    "bg-transparent hover:bg-foreground/10 text-foreground focus-visible:ring-accent ring-offset-background",
+    // Texto/ícone com hover sutil
+    "bg-transparent hover:bg-foreground/10 text-foreground focus-visible:ring-primary ring-offset-background",
   danger:
+    // Ações destrutivas
     "bg-red-600 text-white hover:bg-red-600/90 focus-visible:ring-red-600 ring-offset-background",
 };
 

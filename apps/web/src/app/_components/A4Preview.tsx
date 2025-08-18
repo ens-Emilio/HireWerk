@@ -1,69 +1,132 @@
 "use client";
 
 import { useState } from "react";
+import A4Paper from "@/app/_components/A4Paper";
+import ClassicTemplate from "@/app/_components/templates/ClassicTemplate";
+
+type Variant = "tech" | "marketing" | "admin" | "health";
 
 export default function A4Preview() {
-  const [zoom, setZoom] = useState<1 | 0.75>(1);
+  const [zoom, setZoom] = useState<number>(0.8);
+  const [variant, setVariant] = useState<Variant>("tech");
+
+  const sampleData = () => {
+    if (variant === "marketing") {
+      return {
+        name: "Ana Souza",
+        headline: "Estrategista de Marketing",
+        summary:
+          "• Planejamento e execução de campanhas 360º\n• Crescimento orgânico com SEO e conteúdo",
+        skills: ["SEO", "Branding", "Social Media", "Analytics"],
+        softSkills: ["Comunicação", "Criatividade", "Colaboração"],
+      };
+    }
+    if (variant === "admin") {
+      return {
+        name: "Marcos Lima",
+        headline: "Assistente Administrativo",
+        summary:
+          "• Rotinas de escritório e controle de documentos\n• Suporte a finanças e atendimento",
+        skills: ["Excel", "Atendimento", "Notas Fiscais", "Organização"],
+        softSkills: ["Atenção a detalhes", "Proatividade"],
+      };
+    }
+    if (variant === "health") {
+      return {
+        name: "Camila Torres",
+        headline: "Enfermeira",
+        summary:
+          "• Atendimento humanizado e triagem\n• Protocolos de segurança e medicação",
+        skills: ["Urgência", "Curativos", "Pediatria", "Prontuário"],
+        softSkills: ["Empatia", "Trabalho em equipe"],
+      };
+    }
+    // default tech
+    return {
+      name: "João Silva",
+      headline: "Desenvolvedor Frontend",
+      summary: "• React/Next.js e TypeScript\n• Foco em performance e acessibilidade",
+      skills: ["React", "Next.js", "TypeScript"],
+      softSkills: ["Comunicação", "Resolução de problemas"],
+    };
+  };
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={() => setZoom(1)}
-          className={`h-8 rounded-md border px-2 text-xs ${zoom === 1 ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50"}`}
-          aria-pressed={zoom === 1}
-        >
-          100%
-        </button>
-        <button
-          type="button"
-          onClick={() => setZoom(0.75)}
-          className={`h-8 rounded-md border px-2 text-xs ${zoom === 0.75 ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50"}`}
-          aria-pressed={zoom === 0.75}
-        >
-          75%
-        </button>
+      <div className="mb-3 flex items-center justify-end gap-3">
+        <div className="flex items-center gap-2 text-xs text-foreground/80">
+          <span className="hidden sm:inline">Zoom</span>
+          <input
+            type="range"
+            min={0.6}
+            max={1}
+            step={0.01}
+            value={zoom}
+            onChange={(e) => setZoom(parseFloat(e.currentTarget.value))}
+            aria-label="Zoom do preview"
+            className="w-40 sm:w-56 accent-accent"
+          />
+          <span className="tabular-nums w-10 text-right">{Math.round(zoom * 100)}%</span>
+        </div>
       </div>
 
       <div className="a4-preview">
         <div style={{ width: "100%", height: "100%", transform: `scale(${zoom})`, transformOrigin: "top left" }}>
-          <div className="a4-page">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full" style={{ backgroundColor: "#e5e7eb" }} />
-              <div>
-                <h1>João Silva</h1>
-                <div className="muted" style={{ fontSize: 11 }}>Desenvolvedor Frontend</div>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-1 subtle" style={{ fontSize: 11 }}>
-              <div>• 5+ anos construindo apps com React e TypeScript</div>
-              <div>• Liderou migração para Next.js, reduzindo TTFB em 40%</div>
-              <div>• Focado em performance, acessibilidade e DX</div>
-            </div>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="chip">React</span>
-              <span className="chip">Next.js</span>
-              <span className="chip">TypeScript</span>
-              <span className="chip">Tailwind</span>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <div style={{ border: "1px solid #e5e7eb" }} className="rounded-md p-3">
-                <h2>Experiência</h2>
-                <div>Frontend Pleno — Acme</div>
-                <div className="muted" style={{ fontSize: 11 }}>2022–Atual</div>
-              </div>
-              <div style={{ border: "1px solid #e5e7eb" }} className="rounded-md p-3">
-                <h2>Educação</h2>
-                <div>Bacharel em Sistemas de Informação</div>
-                <div className="muted" style={{ fontSize: 11 }}>USP</div>
-              </div>
-            </div>
-          </div>
+          <A4Paper>
+            <ClassicTemplate data={sampleData()} />
+          </A4Paper>
         </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-1">
+        <button
+          type="button"
+          onClick={() => setVariant("tech")}
+          className={`h-8 rounded-md border px-2 text-xs ${
+            variant === "tech"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-surface text-foreground border-border hover:bg-surface/80"
+          }`}
+          aria-pressed={variant === "tech"}
+        >
+          Tecnologia
+        </button>
+        <button
+          type="button"
+          onClick={() => setVariant("marketing")}
+          className={`h-8 rounded-md border px-2 text-xs ${
+            variant === "marketing"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-surface text-foreground border-border hover:bg-surface/80"
+          }`}
+          aria-pressed={variant === "marketing"}
+        >
+          Marketing
+        </button>
+        <button
+          type="button"
+          onClick={() => setVariant("admin")}
+          className={`h-8 rounded-md border px-2 text-xs ${
+            variant === "admin"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-surface text-foreground border-border hover:bg-surface/80"
+          }`}
+          aria-pressed={variant === "admin"}
+        >
+          Administrativo
+        </button>
+        <button
+          type="button"
+          onClick={() => setVariant("health")}
+          className={`h-8 rounded-md border px-2 text-xs ${
+            variant === "health"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-surface text-foreground border-border hover:bg-surface/80"
+          }`}
+          aria-pressed={variant === "health"}
+        >
+          Saúde
+        </button>
       </div>
     </div>
   );

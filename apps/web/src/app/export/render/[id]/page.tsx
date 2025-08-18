@@ -4,6 +4,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import ClassicTemplate from "@/app/_components/templates/ClassicTemplate";
 import ModernTemplate from "@/app/_components/templates/ModernTemplate";
 import MinimalTemplate from "@/app/_components/templates/MinimalTemplate";
+import A4Paper from "@/app/_components/A4Paper";
 
 export const metadata: Metadata = {
   title: "Exportar PDF | HireWerk",
@@ -22,11 +23,23 @@ type ResumeData = {
   headline?: string;
   summary?: string;
   skills?: string[];
+  softSkills?: string[];
+  experiences?: Array<{
+    role?: string;
+    company?: string;
+    period?: string;
+    bullets?: string[];
+  }>;
+  education?: Array<{
+    course?: string;
+    institution?: string;
+  }>;
+  languages?: string[];
 };
 
 function toResumeData(v: unknown): ResumeData {
   if (typeof v !== "object" || v === null) {
-    return { name: "", headline: "", summary: "", skills: [] };
+    return { name: "", headline: "", summary: "", skills: [], softSkills: [], experiences: [], education: [], languages: [] };
   }
   const obj = v as Record<string, unknown>;
   const name = typeof obj.name === "string" ? obj.name : "";
@@ -35,7 +48,37 @@ function toResumeData(v: unknown): ResumeData {
   const skills = Array.isArray(obj.skills)
     ? obj.skills.filter((s): s is string => typeof s === "string")
     : [];
-  return { name, headline, summary, skills };
+  const softSkills = Array.isArray(obj.softSkills)
+    ? obj.softSkills.filter((s): s is string => typeof s === "string")
+    : [];
+  const experiences = Array.isArray(obj.experiences)
+    ? obj.experiences
+        .filter((e): e is Record<string, unknown> => !!e && typeof e === "object")
+        .map((e) => {
+          const er = e as Record<string, unknown>;
+          const role = typeof er.role === "string" ? er.role : "";
+          const company = typeof er.company === "string" ? er.company : "";
+          const period = typeof er.period === "string" ? er.period : "";
+          const bullets = Array.isArray(er.bullets)
+            ? er.bullets.filter((b): b is string => typeof b === "string")
+            : [];
+          return { role, company, period, bullets };
+        })
+    : [];
+  const education = Array.isArray(obj.education)
+    ? obj.education
+        .filter((e): e is Record<string, unknown> => !!e && typeof e === "object")
+        .map((e) => {
+          const er = e as Record<string, unknown>;
+          const course = typeof er.course === "string" ? er.course : "";
+          const institution = typeof er.institution === "string" ? er.institution : "";
+          return { course, institution };
+        })
+    : [];
+  const languages = Array.isArray(obj.languages)
+    ? obj.languages.filter((l): l is string => typeof l === "string")
+    : [];
+  return { name, headline, summary, skills, softSkills, experiences, education, languages };
 }
 
 export default async function ExportRenderPage(props: {
@@ -99,10 +142,10 @@ export default async function ExportRenderPage(props: {
 
   return (
     <main className="p-8 print:p-0">
-      <section className="w-[794px] mx-auto bg-white text-black shadow print:shadow-none">
-        <div className="px-[24mm] py-[18mm]">
+      <section className="w-[794px] mx-auto">
+        <A4Paper style={{ padding: "24mm 18mm" }}>
           <Template data={data} />
-        </div>
+        </A4Paper>
       </section>
       <style
         dangerouslySetInnerHTML={{

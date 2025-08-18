@@ -93,7 +93,7 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
           href={`/api/resumes/${resumeId}/export/pdf`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex h-9 items-center justify-center rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90 text-center"
+          className="inline-flex h-9 items-center justify-center rounded-md bg-accent px-3 text-xs font-medium text-accent-foreground hover:bg-accent/90 text-center"
           aria-label="Exportar PDF"
         >
           Exportar PDF
@@ -117,7 +117,7 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
             value=""
             disabled
             className="bg-surface text-foreground/70"
-            style={{ backgroundColor: "hsl(var(--surface))", color: "hsl(var(--foreground) / 0.7)" }}
+            style={{ backgroundColor: "var(--color-surface)" }}
           >
             {loading ? "Carregando…" : "Template"}
           </option>
@@ -126,7 +126,7 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
               key={t.id}
               value={t.id}
               className="bg-surface text-foreground"
-              style={{ backgroundColor: "hsl(var(--surface))", color: "hsl(var(--foreground))" }}
+              style={{ backgroundColor: "var(--color-surface)", color: "var(--color-foreground)" }}
             >
               {t.name}
             </option>
@@ -137,9 +137,9 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
   }
 
   return (
-    <div className="mb-6 rounded-lg border border-border bg-white p-3 text-black">
-      <div className="text-xs font-semibold text-black/60">Currículo</div>
-      <div className="mt-1 text-sm text-black truncate" title={resume?.title || ""}>
+    <div className="mb-6 rounded-lg border border-border bg-surface p-3 text-foreground">
+      <div className="text-xs font-semibold text-foreground/60">Currículo</div>
+      <div className="mt-1 text-sm text-foreground truncate" title={resume?.title || ""}>
         {resume?.title || "Carregando…"}
       </div>
       <div className="mt-3 flex items-center gap-2">
@@ -154,7 +154,7 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
             value=""
             disabled
             className="bg-surface text-foreground/70"
-            style={{ backgroundColor: "hsl(var(--surface))", color: "hsl(var(--foreground) / 0.7)" }}
+            style={{ backgroundColor: "var(--color-surface)" }}
           >
             {loading ? "Carregando…" : "Escolher template"}
           </option>
@@ -163,7 +163,7 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
               key={t.id}
               value={t.id}
               className="bg-surface text-foreground"
-              style={{ backgroundColor: "hsl(var(--surface))", color: "hsl(var(--foreground))" }}
+              style={{ backgroundColor: "var(--color-surface)", color: "var(--color-foreground)" }}
             >
               {t.name}
             </option>
@@ -179,7 +179,7 @@ export default function CurrentContext({ variant = "sidebar" }: { variant?: Vari
           href={`/api/resumes/${resumeId}/export/pdf`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex h-8 items-center justify-center rounded-md bg-accent px-2 text-xs font-medium text-white hover:bg-accent/90 text-center"
+          className="inline-flex h-8 items-center justify-center rounded-md bg-accent px-2 text-xs font-medium text-accent-foreground hover:bg-accent/90 text-center"
         >
           Exportar PDF
         </a>
