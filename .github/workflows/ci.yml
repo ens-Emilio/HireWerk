@@ -18,19 +18,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: '1.x'
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/nuxt-web/package.json
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile || bun install
+        run: npm install
 
       - name: Type Check
-        run: bun run typecheck
+        run: npm run typecheck
 
       - name: Build
-        run: bun run build
+        run: npm run build
 
       - name: Generate Static Site
-        run: bun run generate
+        run: npm run generate
