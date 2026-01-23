@@ -47,7 +47,10 @@ export function runMigrations(): void {
     for (const version of versions) {
         if (version > currentVersion && version <= SCHEMA_VERSION) {
             console.log(`[Migrations] Executando migração para ${version}...`);
-            MIGRATIONS[version]();
+            const migrationFn = MIGRATIONS[version];
+            if (migrationFn) {
+                migrationFn();
+            }
         }
     }
 

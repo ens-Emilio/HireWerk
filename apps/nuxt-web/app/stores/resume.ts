@@ -25,7 +25,7 @@ export const useResumeStore = defineStore('resume', () => {
     const index = ref<ResumeIndex>([])
 
     // Inicializar apenas no client-side
-    if (process.client) {
+    if (import.meta.client) {
         ensureStorageInitialized()
         runMigrations()
 
