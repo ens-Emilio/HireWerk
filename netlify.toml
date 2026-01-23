@@ -1,7 +1,7 @@
 # Netlify Build Configuration
 [build]
   base = "apps/nuxt-web"
-  command = "bun run generate"
+  command = "npm install && npm run generate"
   publish = ".output/public"
 
 [[redirects]]
