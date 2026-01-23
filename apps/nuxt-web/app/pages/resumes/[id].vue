@@ -1,0 +1,199 @@
+<script setup lang="ts">
+import { useResumeStore } from '~/stores/resume'
+import { useRoute } from 'vue-router'
+import { ref, watch, onMounted, computed, defineAsyncComponent } from 'vue'
+import { createError } from '#app'
+import A4Paper from '~/components/resume/A4Paper.vue'
+
+const ClassicTemplate = defineAsyncComponent(() => import('~/components/templates/ClassicTemplate.vue'))
+const MinimalTemplate = defineAsyncComponent(() => import('~/components/templates/MinimalTemplate.vue'))
+const ModernTemplate = defineAsyncComponent(() => import('~/components/templates/ModernTemplate.vue'))
+
+const route = useRoute()
+const store = useResumeStore()
+const id = route.params.id as string
+
+const resume = ref(store.getResume(id))
+const zoom = ref(0.8)
+
+onMounted(() => {
+  if (store.ready) {
+    resume.value = store.getResume(id)
+  }
+})
+
+watch(() => store.ready, (ready) => {
+  if (ready) {
+    resume.value = store.getResume(id)
+  }
+})
+
+const currentTemplate = computed(() => {
+  if (!resume.value?.templateId) return ClassicTemplate
+  
+  if (resume.value.templateId.includes('minimal')) return MinimalTemplate
+  if (resume.value.templateId.includes('modern')) return ModernTemplate
+  return ClassicTemplate
+})
+
+// Not found
+if (resume.value && resume.value.deletedAt) {
+  throw createError({ statusCode: 404, message: 'Currículo não encontrado' })
+}
+</script>
+
+<template>
+  <div v-if="!store.ready" class="flex items-center justify-center py-20">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+
+  <div v-else-if="!resume" class="flex flex-col items-center justify-center py-20 text-center">
+    <div class="w-16 h-16 bg-danger/10 text-danger rounded-full flex items-center justify-center mb-4">
+      <Icon name="lucide:alert-triangle" class="w-8 h-8" />
+    </div>
+    <h2 class="text-xl font-bold text-foreground">Currículo não encontrado</h2>
+    <NuxtLink to="/resumes" class="mt-4 text-primary font-semibold hover:underline flex items-center gap-2">
+      <Icon name="lucide:arrow-left" class="w-4 h-4" />
+      Voltar para Meus Currículos
+    </NuxtLink>
+  </div>
+
+  <div v-else class="max-w-[1600px] mx-auto">
+    <!-- Toolbar Superior -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div>
+        <NuxtLink to="/resumes" class="text-xs font-bold text-primary uppercase tracking-widest hover:opacity-80 transition-opacity mb-1 inline-block">
+          ← Meus Currículos
+        </NuxtLink>
+        <div class="flex items-center gap-3">
+           <input 
+            v-model="resume.title"
+            @input="() => store.updateResume(resume!)"
+            class="text-3xl font-black bg-transparent border-none p-0 focus:ring-0 w-full md:w-auto min-w-[300px] text-foreground"
+            placeholder="Nome do Currículo"
+          />
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 bg-surface p-1 rounded-xl border border-border self-start">
+        <button 
+          @click="store.exportPdf(id)"
+          class="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+        >
+          <Icon name="lucide:download" class="w-4 h-4" />
+          Baixar PDF
+        </button>
+        <button 
+          @click="store.exportJson(id)"
+          class="h-10 px-4 rounded-lg hover:bg-background text-foreground text-sm font-semibold transition-all"
+        >
+          JSON
+        </button>
+        <NuxtLink 
+          :to="`/templates?id=${id}`"
+          class="h-10 px-4 rounded-lg hover:bg-background text-foreground text-sm font-semibold transition-all flex items-center gap-2"
+        >
+           Template
+        </NuxtLink>
+      </div>
+    </div>
+
+    <div class="grid gap-10 lg:grid-cols-[480px_1fr] items-start">
+      <!-- Editor Column -->
+      <div class="space-y-8 pb-20">
+        <section class="bg-surface border border-border rounded-2xl p-6 shadow-sm">
+          <h2 class="text-sm font-black uppercase tracking-widest text-muted mb-6 flex items-center gap-2">
+            <span class="w-1.5 h-1.5 bg-primary rounded-full"></span>
+            Dados Pessoais
+          </h2>
+          
+          <div class="space-y-5">
+            <div class="group">
+              <label class="block text-xs font-bold text-muted uppercase tracking-tighter mb-1 group-focus-within:text-primary transition-colors">Nome Completo</label>
+              <input 
+                v-model="resume.data.name"
+                @input="() => store.updateResume(resume!)"
+                placeholder="Seu nome"
+                class="w-full h-11 bg-background border border-border rounded-xl px-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+              />
+            </div>
+
+            <div class="group">
+              <label class="block text-xs font-bold text-muted uppercase tracking-tighter mb-1 group-focus-within:text-primary transition-colors">Título Profissional</label>
+              <input 
+                v-model="resume.data.headline"
+                @input="() => store.updateResume(resume!)"
+                placeholder="Ex: Desenvolvedor Fullstack"
+                class="w-full h-11 bg-background border border-border rounded-xl px-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+              />
+            </div>
+
+            <div class="group">
+              <label class="block text-xs font-bold text-muted uppercase tracking-tighter mb-1 group-focus-within:text-primary transition-colors">Resumo Profissional</label>
+              <textarea 
+                v-model="resume.data.summary"
+                @input="() => store.updateResume(resume!)"
+                placeholder="Breve descrição sobre sua carreira..."
+                class="w-full min-h-[140px] bg-background border border-border rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none resize-none"
+              />
+            </div>
+          </div>
+        </section>
+
+        <!-- Placeholder para outras seções -->
+        <div class="p-6 border-2 border-dashed border-border rounded-2xl text-center">
+          <p class="text-muted text-sm font-medium">Mais seções em breve...</p>
+        </div>
+      </div>
+
+      <!-- Preview Column -->
+      <div class="relative min-h-[800px]">
+         <div class="sticky top-24 space-y-4">
+          <div class="flex items-center justify-between px-2">
+            <span class="text-xs font-bold text-muted uppercase tracking-widest">Visualização em Tempo Real</span>
+            <div class="flex items-center gap-3 bg-surface border border-border rounded-full px-3 py-1.5">
+              <Icon name="lucide:search" class="w-3.5 h-3.5 text-muted" />
+              <input
+                type="range"
+                min="0.5"
+                max="1"
+                step="0.01"
+                v-model.number="zoom"
+                class="w-24 accent-primary"
+              />
+              <span class="text-[10px] font-black tabular-nums w-8 text-muted">{{ Math.round(zoom * 100) }}%</span>
+            </div>
+          </div>
+
+          <div class="bg-surface/30 border border-border rounded-3xl overflow-hidden aspect-[1/1.4] flex items-start justify-center p-12 shadow-inner overflow-y-auto max-h-[80vh] custom-scrollbar">
+            <div 
+              :style="{ transform: `scale(${zoom})`, transformOrigin: 'top center' }"
+              class="transition-transform duration-300 ease-out"
+            >
+              <A4Paper>
+                <component :is="currentTemplate" :data="resume.data" />
+              </A4Paper>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--muted) 30%, transparent);
+}
+</style>

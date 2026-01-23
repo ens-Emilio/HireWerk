@@ -1,0 +1,10 @@
+# Netlify Build Configuration
+[build]
+  base = "apps/nuxt-web"
+  command = "bun run generate"
+  publish = ".output/public"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

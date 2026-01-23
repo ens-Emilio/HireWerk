@@ -1,142 +1,84 @@
-# HireWerk
+# HireWerk - Documentação Técnica (Nuxt.js)
 
-Documentação do projeto com base no plano em `plan.md`.
+## Visão Geral
 
-## Status Atual
+HireWerk é uma aplicação SPA (Single Page Application) construída com Nuxt 4 que permite criar, gerenciar e exportar currículos inteiramente no navegador.
 
-- CRUD de currículos e templates ✅
-- Preview e escolha de template ✅
-- Exportação de PDF (GET/POST) ✅
-- Renderização SSR privada com token ✅
-- Histórico de exportações (`exports`) ✅
-- Versionamento automático + snapshots (`resume_versions`) ✅
-- Lixeira de currículos (restaurar, esvaziar, toasts, item no sidebar) ✅
-- Navegação por setas e atalhos (← →) ✅
-- Login social (Google/GitHub) ⏳
-- Exportação JSON ⏳
+## Arquitetura
 
-## Visão Geral (MVP)
-- Cadastro/Login (OAuth: Google/GitHub)
-- Criar/editar currículo via campos estruturados + seções livres
-- Escolher template visual (mín. 3 modelos)
-- Gerar e baixar PDF
-- Salvar versões e exportar JSON
+### Client-Side First
 
-## Stack Sugerida
-- Frontend: Next.js (App Router) + TypeScript + Tailwind CSS
-- Backend/BaaS: Supabase (Postgres + Auth + Storage)
-- ORM: Prisma (opcional) ou cliente Supabase
-- Autenticação: Auth.js (NextAuth) ou Clerk
-- PDF: Puppeteer/Playwright em função serverless
-- Infra: Vercel (Deploy), GitHub Actions (CI/CD), Turborepo (monorepo, opcional)
+- **Framework:** Nuxt 4 (SSR: false)
+- **Persistência:** localStorage
+- **Estado:** Pinia
 
-## Roadmap (Sprints)
-- Sprint 0 — Setup & Infra: TS, ESLint, Prettier, Tailwind, Supabase, Boilerplate Next.js
-  - Entrega: app blank com login
-- Sprint 1 — Modelos + CRUD básico:
-  - Modelagem (users, resumes, sections, templates, exports)
-  - Endpoints CRUD e UI de formulário
-  - Entrega: salvar/editar currículo
-- Sprint 2 — Templates & Preview:
-  - 2–3 templates responsivos, preview em tempo real, versionamento
-  - Entrega: escolher template + preview
-- Sprint 3 — PDF & Auth UX:
-  - Geração de PDF via Puppeteer, login social, testes e CI
-  - Entrega: download PDF + login social
-- Sprint 4 (opcional) — Polimento:
-  - Storage, e-mails, analytics, integrações, plano pago/limitações
-  - Entrega: pronto para beta
+### Estrutura de Dados
 
-## Modelagem de Dados (resumo)
-- users: id, email, name, avatar_url, created_at
-- resumes: id, user_id, title, template_id, data(jsonb), timestamps, version
-- templates: id, slug, name, html_template, css, preview_image_url
-- exports: id, resume_id, user_id, format, storage_path, created_at
+Os dados são armazenados no localStorage com validação Zod 4.
 
-## Endpoints Principais (REST)
-- GET /api/resumes — listar currículos do usuário
-- POST /api/resumes — criar currículo
-- GET /api/resumes/:id — obter currículo
-- PUT /api/resumes/:id — atualizar currículo
-- GET /api/resumes/:id/export/pdf — gerar/baixar PDF (navegador)
-- POST /api/resumes/:id/export/pdf — gerar PDF programaticamente
-- GET /api/templates — listar templates
-
-### Fluxo de PDF
-
-- Rota SSR protegida: `/export/render/:id?token=...` (token assinado via `EXPORT_TOKEN_SECRET`)
-- Geração via Puppeteer-Core + `@sparticuz/chromium`
-- Endpoint GET retorna PDF inline com cabeçalhos adequados
-- Logs em `exports`: status, duração, erro, tamanho, checksum e `resume_version`
-
-## Estrutura de Arquivos (Monorepo sugerido)
-```
-/HireWerk
-├─ apps/
-│  └─ web/
-│     ├─ app/
-│     │  ├─ resume/[id]/page.tsx
-│     │  ├─ api/
-│     │  │  ├─ resumes/route.ts
-│     │  │  └─ export/pdf/route.ts
-│     ├─ components/
-│     │  ├─ Editor/
-│     │  ├─ Preview/
-│     │  └─ Templates/
-│     ├─ styles/
-│     └─ tsconfig.json
-├─ packages/
-│  ├─ ui/
-│  ├─ db/
-│  └─ lib/
-├─ infra/
-│  ├─ supabase/
-│  └─ puppeteer/
-├─ .github/
-│  └─ workflows/ci.yml
-├─ package.json
-└─ turbo.json
+```ts
+// Schema do Currículo
+interface ResumeDoc {
+  id: string
+  title: string
+  templateId: string // 'classic' | 'minimal' | 'modern'
+  data: ResumeData   // Campos do currículo
+  version: number    // Auto-incremento
+  updatedAt: string  // ISO date
+  deletedAt: string | null // Soft delete
+}
 ```
 
-## Sistema de Templates
-- Templates como componentes React
-- Recebem `data` JSON e renderizam HTML imprimível
-- Suporte a overrides (tipografia, cores) via JSON
-- Renderização SSR para geração de PDF
+## Fluxos Principais
 
-## Boas Práticas para PDF
-- Rota privada HTML `/export/render/:id?token=xxx`
-- CSS com `@page` e media queries `print`
-- Pré-carregar fontes
-- Evitar carregamento dinâmico na renderização
+### Criação de Currículo
 
-## Execução (Bun)
+1. `store.createResume()` gera um UUID v4.
+2. Salva o documento inicial em `hirewerk:resume:{id}`.
+3. Adiciona entrada no índice `hirewerk:resumes:index`.
 
-No diretório `apps/web`:
+### Auto-Save e Versionamento
 
-```bash
-bun install
-cp .env.example .env.local
-bun run dev
+1. Usuário edita campos no Editor.
+2. Observador (watcher) dispara `store.updateResume()` com debounce de 500ms.
+3. Versão anterior é salva como snapshot em `hirewerk:resume:{id}:versions`.
+4. Versão atual é incrementada e salva.
+
+### Exportação PDF
+
+1. `store.exportPdf(id)` aciona `window.print()`.
+2. CSS `@media print` formata a página para A4.
+3. Elementos de UI (sidebar, botões) são ocultados.
+4. Navegador gera o PDF nativamente.
+
+## Componentes
+
+### Editor
+
+O Editor (`pages/resumes/[id].vue`) combina formulários reativos com preview em tempo real.
+Utiliza **componentes dinâmicos** para renderizar o template escolhido:
+
+```vue
+<component :is="currentTemplate" :data="resume.data" />
 ```
 
-Variáveis relevantes:
+### Templates
 
-- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `EXPORT_TOKEN_SECRET`
-- `CHROME_PATH` ou `PUPPETEER_EXECUTABLE_PATH` (dev local para PDF)
+Templates são componentes Vue puros que recebem `data` via props.
+Localizados em `components/templates/`.
 
-## Segurança
-- Autenticação obrigatória nas APIs
-- Controle de acesso por usuário
-- Sanitização de campos HTML
-- Backups regulares do banco
+- `ClassicTemplate.vue`
+- `MinimalTemplate.vue`
+- `ModernTemplate.vue`
 
-## Justificativa da Stack
-- Next.js + Supabase acelera MVP, com SSR e DB integrado
-- Puppeteer garante PDF fiel ao HTML/CSS
-- Tailwind agiliza criação de templates
-- Deploy simplificado com Vercel e CI no GitHub Actions
+## Deploy (Netlify)
 
-## Licença
-MIT © 2025 ens-Emilio
+Configurado via `netlify.toml`:
+
+```toml
+[build]
+  command = "bun run build"
+  publish = ".output/public" # Output estático do Nuxt
+```
+
+Build command gera arquivos estáticos prontos para CDN.

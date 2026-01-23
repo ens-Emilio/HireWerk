@@ -1,0 +1,303 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Base background and text */
+  --background: #FFFFFF;
+  --foreground: #0F172A;
+  /* Slate 900 */
+
+  /* Radius e bordas */
+  --radius: 10px;
+  --border: #E2E8F0;
+  /* Slate 200 */
+  --muted: #64748B;
+  /* Slate 500 */
+  --ring: #2563EB;
+  /* Blue 600 */
+
+  /* Semantic Layers */
+  --surface: #F8FAFC;
+  /* Slate 50 */
+  --surface-foreground: #0F172A;
+
+  --primary: #2563EB;
+  --primary-foreground: #FFFFFF;
+
+  --accent: #F59E0B;
+  /* Amber 500 */
+  --accent-foreground: #0F172A;
+
+  /* Sombras utilitárias premium */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* Dark Mode Realçado (Slate/Zinc Profundo) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #020617;
+    /* Slate 950 */
+    --foreground: #F8FAFC;
+    --border: #1E293B;
+    /* Slate 800 */
+    --muted: #94A3B8;
+    /* Slate 400 */
+    --ring: #3B82F6;
+
+    --surface: #0F172A;
+    /* Slate 900 */
+    --surface-foreground: #F8FAFC;
+
+    --primary: #3B82F6;
+    --accent: #F59E0B;
+  }
+}
+
+/* Suporte a classes de tema para controle manual se necessário */
+.theme-light {
+  --background: #FFFFFF;
+  --foreground: #0F172A;
+  --surface: #F8FAFC;
+  --border: #E2E8F0;
+}
+
+.theme-dark {
+  --background: #020617;
+  --foreground: #F8FAFC;
+  --surface: #0F172A;
+  --border: #1E293B;
+}
+
+
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Foco visível padrão para elementos interativos */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+/* Controles de formulário (borda visível por padrão) */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+
+/* Placeholder mais sutil e consistente com o tema */
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-muted);
+}
+
+/* Realce adicional de borda no foco (além do outline visível) */
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--ring);
+}
+
+/* Utilitário para seções com surface e texto apropriado */
+.surface-section {
+  background-color: var(--color-surface);
+  color: var(--color-surface-foreground);
+}
+
+/* Seção padrão: espaçamento vertical consistente */
+.section {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+/* Grid padrão para cards responsivos */
+.card-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+
+  /* sm */
+  .card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+
+  /* lg */
+  .card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Preview A4 vertical (neutro) */
+.a4-preview {
+  width: 100%;
+  max-width: 380px;
+  /* reduzido para ficar mais compacto */
+  aspect-ratio: 1 / 1.414;
+  /* A4 */
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.a4-page {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  /* sempre branco para simular papel */
+  color: #333333;
+  /* cinza para contraste */
+  /* Congela tokens internos para preview/impressão neutros */
+  --color-background: #ffffff;
+  --color-foreground: #333333;
+  --color-border: #cccccc;
+  --color-surface: #f5f5f5;
+  --color-surface-foreground: #333333;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  /* papel geralmente sem radius acentuado */
+  padding: 24px;
+  overflow: hidden;
+  font-size: 12px;
+  /* base para conteúdo de currículo */
+  line-height: 1.5;
+}
+
+/* Tipografia e utilitários internos do A4 */
+.a4-page h1 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.a4-page h2 {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #374151;
+  /* gray-700 */
+  margin: 12px 0 4px 0;
+}
+
+.a4-page .muted {
+  opacity: 0.7;
+}
+
+.a4-page .subtle {
+  opacity: 0.8;
+}
+
+.a4-page .chip {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 9999px;
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+/* Utilitário de cor de sucesso */
+.text-success {
+  color: var(--color-success);
+}
+
+/* Link utilitário opt-in: use className="link" para padronizar */
+a.link,
+.link {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a.link:hover,
+.link:hover {
+  text-decoration: underline;
+}
+
+/* Remover sombras/bordas no PDF/Impressão para saída limpa */
+@media print {
+
+  /* Configuração da página */
+  @page {
+    size: A4;
+    margin: 2cm;
+  }
+
+  /* Ocultar elementos de UI */
+  nav,
+  header,
+  footer,
+  .no-print,
+  .app-sidebar,
+  button,
+  select,
+  input[type="range"] {
+    display: none !important;
+  }
+
+  /* Remover sombras e bordas do preview */
+  .a4-page {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .a4-preview {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Forçar fundo branco e texto preto */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Evitar quebras de página dentro de elementos */
+  .no-break,
+  .a4-page h2,
+  .a4-page .experience-item,
+  .a4-page .education-item {
+    page-break-inside: avoid;
+  }
+
+  /* Forçar quebra de página */
+  .page-break {
+    page-break-after: always;
+  }
+
+  /* Otimizar cores para impressão */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
