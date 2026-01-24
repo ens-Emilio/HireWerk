@@ -8,10 +8,10 @@
 ## 📊 Estatísticas do Projeto
 
 - **Total de Arquivos Vue:** 10 componentes
-- **Total de Arquivos TypeScript:** 10 módulos
+- **Total de Arquivos TypeScript:** 12 módulos
 - **Framework:** Nuxt 4.3.0
 - **UI Library:** Vue 3.5.27
-- **Linhas de Código:** ~2.500+ LOC
+- **Linhas de Código:** ~3.000+ LOC
 
 ---
 
@@ -33,10 +33,14 @@ apps/nuxt-web/
 │   │       └── ModernTemplate.vue          # Template moderno
 │   │
 │   ├── layouts/
-│   │   └── default.vue                     # Layout principal (67 linhas)
-│   │                                       # - Header com logo + nav
-│   │                                       # - Badge "Beta"
-│   │                                       # - Footer com créditos
+│   │   └── default.vue                     # Layout principal (140+ linhas)
+│   │                                       # - Header responsivo (Desktop/Mobile)
+│   │                                       # - Menu Hamburguer
+│   │                                       # - Dark/Light Mode toggle
+│   │                                       # - Badge "Beta 1.0.0" no footer
+│   │
+│   ├── composables/                        # 🧠 Lógica compartilhada
+│   │   └── useTheme.ts                     # Gerenciamento de tema persistente
 │   │
 │   ├── lib/                                # 📚 Lógica de negócio (8 módulos)
 │   │   ├── export/
@@ -71,10 +75,11 @@ apps/nuxt-web/
 │   │       │                               # - Empty state
 │   │       │                               # - Botão criar
 │   │       │
-│   │       ├── [id].vue                    # Editor de currículo (208 linhas)
-│   │       │                               # - Layout 2 colunas
+│   │       ├── [id].vue                    # Editor de currículo (260+ linhas)
+│   │       │                               # - Layout Híbrido (Mobile Tabs / Desktop Grid)
 │   │       │                               # - Formulários reativos
-│   │       │                               # - Preview A4 com zoom
+│   │       │                               # - Preview A4 com zoom e escala
+│   │       │                               # - Sistema Undo/Redo com Toasts
 │   │       │                               # - Toolbar (PDF/JSON/Template)
 │   │       │
 │   │       └── trash.vue                   # Lixeira (87 linhas)
@@ -134,11 +139,11 @@ apps/nuxt-web/
 ```
 
 **Features:**
-- Header sticky com `backdrop-blur`
+- Header responsivo com `backdrop-blur`
 - Logo com ícone `lucide:briefcase-business`
-- Badge "Beta" ao lado do nome
-- Navegação responsiva
-- Footer com créditos e link GitHub
+- Menu Hamburguer para navegação mobile
+- Alternância de Tema (Dark/Light) com persistência
+- Footer com versão `Beta 1.0.0`, créditos e link GitHub
 
 ---
 
@@ -358,12 +363,13 @@ const currentTemplate = computed(() => {
 ```
 
 **Funcionalidades:**
-- Editor de 2 colunas
-- Preview em tempo real
+- Editor Adaptativo (Abas no mobile, Grid no Desktop)
+- Preview em tempo real fiel à impressão
 - Zoom ajustável (50%-100%)
-- Auto-save ao digitar
-- Exportação PDF/JSON
-- Troca de template
+- Auto-save local com versionamento automático
+- Sistema Undo/Redo robustecido (recuperação de snapshots anteriores do disco)
+- Feedback visual de ações via Toasts
+- Exportação PDF/JSON nativa
 - Lazy loading de templates
 
 ---
