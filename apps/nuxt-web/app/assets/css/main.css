@@ -3,30 +3,18 @@
 @tailwind utilities;
 
 :root {
-  /* Base background and text */
+  /* Base background and text (Light Mode Default) */
   --background: #FFFFFF;
   --foreground: #0F172A;
-  /* Slate 900 */
-
-  /* Radius e bordas */
   --radius: 10px;
   --border: #E2E8F0;
-  /* Slate 200 */
   --muted: #64748B;
-  /* Slate 500 */
   --ring: #2563EB;
-  /* Blue 600 */
-
-  /* Semantic Layers */
   --surface: #F8FAFC;
-  /* Slate 50 */
   --surface-foreground: #0F172A;
-
   --primary: #2563EB;
   --primary-foreground: #FFFFFF;
-
   --accent: #F59E0B;
-  /* Amber 500 */
   --accent-foreground: #0F172A;
 
   /* Sombras utilitárias premium */
@@ -35,40 +23,25 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
-/* Dark Mode Realçado (Slate/Zinc Profundo) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617;
-    /* Slate 950 */
-    --foreground: #F8FAFC;
-    --border: #1E293B;
-    /* Slate 800 */
-    --muted: #94A3B8;
-    /* Slate 400 */
-    --ring: #3B82F6;
-
-    --surface: #0F172A;
-    /* Slate 900 */
-    --surface-foreground: #F8FAFC;
-
-    --primary: #3B82F6;
-    --accent: #F59E0B;
-  }
-}
-
-/* Suporte a classes de tema para controle manual se necessário */
-.theme-light {
-  --background: #FFFFFF;
-  --foreground: #0F172A;
-  --surface: #F8FAFC;
-  --border: #E2E8F0;
-}
-
-.theme-dark {
+/* Dark Mode (Classe .dark no html) */
+:root.dark {
   --background: #020617;
   --foreground: #F8FAFC;
-  --surface: #0F172A;
   --border: #1E293B;
+  --muted: #94A3B8;
+  --ring: #3B82F6;
+  --surface: #0F172A;
+  --surface-foreground: #F8FAFC;
+  --primary: #3B82F6;
+  --accent: #F59E0B;
+}
+
+/* Media query fallback para sistema (opcional, pode ser removida se o JS controla tudo) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    /* Só aplica se não tiver classe .light forçada */
+    /* Mas como vamos usar class="dark", o JS controla melhor. Deixando vazio para evitar conflito. */
+  }
 }
 
 
@@ -245,7 +218,8 @@ a.link:hover,
   /* Configuração da página */
   @page {
     size: A4;
-    margin: 2cm;
+    margin: 0;
+    /* Margem zero para controle total via CSS */
   }
 
   /* Ocultar elementos de UI */
@@ -256,30 +230,58 @@ a.link:hover,
   .app-sidebar,
   button,
   select,
-  input[type="range"] {
+  input[type="range"],
+  .toolbar,
+  .bg-surface,
+  a[href^="/"],
+  /* Links de navegação */
+  .grid,
+  /* Grid do layout */
+  .fixed,
+  /* Elementos fixos */
+  .sticky
+
+  /* Elementos sticky */
+    {
     display: none !important;
   }
 
-  /* Remover sombras e bordas do preview */
+  /* Exceção: O container do preview deve ser visível, mas sem grid */
+  .editor-layout,
+  .preview-container,
+  .a4-preview,
   .a4-page {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: black !important;
     box-shadow: none !important;
     border: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-    height: auto !important;
+    overflow: visible !important;
   }
 
-  .a4-preview {
-    max-width: 100% !important;
-    width: 100% !important;
+  /* Resetar o scale do zoom */
+  .scale-zoom {
+    transform: none !important;
   }
 
-  /* Forçar fundo branco e texto preto */
+  /* Ocultar a coluna de edição explicitamente se o seletor .grid acima for muito genérico */
+  .editor-column {
+    display: none !important;
+  }
+
+  /* Forçar fundo branco e texto preto globalmente */
   body {
     background: white !important;
     color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
   }
 
   /* Evitar quebras de página dentro de elementos */
@@ -299,5 +301,16 @@ a.link:hover,
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+}
+
+/* Classes utilitárias para impressão */
+.print-hidden {
+  display: none !important;
+}
+
+@media print {
+  .print-only {
+    display: block !important;
   }
 }

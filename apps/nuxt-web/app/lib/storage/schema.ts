@@ -15,7 +15,7 @@ export const ResumeDataSchema = z.record(z.string(), z.any());
  */
 export const ResumeDocSchema = z.object({
     id: z.string().uuid(),
-    title: z.string().min(1),
+    title: z.string(),
     templateId: z.string(),
     data: ResumeDataSchema,
     locale: z.string().default("pt-BR"),

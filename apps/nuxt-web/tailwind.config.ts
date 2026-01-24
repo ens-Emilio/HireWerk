@@ -7,26 +7,28 @@ export default {
         './app/pages/**/*.vue',
         './app/components/**/*.vue',
     ],
+    darkMode: 'class',
     theme: {
         extend: {
             colors: {
-                background: '#FFFFFF',
-                foreground: '#0F172A',
+                border: 'var(--border)',
+                background: 'var(--background)',
+                foreground: 'var(--foreground)',
+                muted: 'var(--muted)',
                 primary: {
-                    DEFAULT: '#2563EB',
-                    foreground: '#FFFFFF',
+                    DEFAULT: 'var(--primary)',
+                    foreground: 'var(--primary-foreground)',
                 },
                 accent: {
-                    DEFAULT: '#F59E0B',
-                    foreground: '#0F172A',
+                    DEFAULT: 'var(--accent)',
+                    foreground: 'var(--accent-foreground)',
                 },
                 surface: {
-                    DEFAULT: '#F8FAFC',
-                    foreground: '#0F172A',
+                    DEFAULT: 'var(--surface)',
+                    foreground: 'var(--surface-foreground)',
                 },
-                border: '#E2E8F0',
-                muted: '#64748B',
-                success: '#10B981',
+                ring: 'var(--ring)',
+                success: '#10B981', // Manter hardcoded se não houver variável ou criar variável depois
                 danger: '#EF4444',
             },
             borderRadius: {
