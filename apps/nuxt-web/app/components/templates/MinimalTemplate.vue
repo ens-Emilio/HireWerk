@@ -30,7 +30,7 @@ const languages = computed(() => (props.data.languages ?? []).filter(Boolean))
       <div class="mt-2 space-y-2">
         <div v-for="(exp, i) in experiences" :key="i">
           <div class="font-medium text-sm">{{ exp.role || "Cargo" }}<span v-if="exp.company"> — {{ exp.company }}</span></div>
-          <div v-if="exp.period" class="text-[11px] text-muted-foreground/70">{{ exp.period }}</div>
+          <div v-if="exp.period" class="text-[11px] text-muted-foreground">{{ exp.period }}</div>
           <p v-if="exp.description?.trim()" class="mt-1 text-[11px] whitespace-pre-wrap">{{ exp.description }}</p>
           <ul v-else-if="(((exp as Record<string, unknown>).bullets as string[] | undefined) ?? []).length > 0" class="mt-1 list-disc pl-4 text-[11px]">
             <li v-for="(b, j) in (((exp as Record<string, unknown>).bullets as string[] | undefined) ?? [])" :key="j">{{ b }}</li>

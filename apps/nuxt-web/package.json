@@ -8,6 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "typecheck": "nuxt typecheck",
+    "test:a11y": "node scripts/test-a11y.mjs",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
@@ -34,6 +35,8 @@
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.152",
     "@nuxt/icon": "^2.2.1",
+    "axe-core": "^4.14.0",
+    "puppeteer-core": "^25.16.0",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.2.3"
   }

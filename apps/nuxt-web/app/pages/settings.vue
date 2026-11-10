@@ -166,7 +166,7 @@ function handleExportZip() {
           <p class="text-xs text-muted-foreground">A folha que inclina seguindo o cursor</p>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
-          <input type="checkbox" :checked="!disable3d" class="sr-only peer" @change="toggle3d" />
+          <input type="checkbox" :checked="!disable3d" class="sr-only peer" @change="toggle3d" aria-label="Ativar animação 3D na página inicial" />
           <span class="w-11 h-6 bg-border rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5" />
         </label>
       </div>
@@ -189,7 +189,7 @@ function handleExportZip() {
     <Card class="p-6 rounded-2xl space-y-3">
       <h2 class="font-display text-lg font-bold text-foreground">Nome dos arquivos exportados</h2>
       <p class="text-sm text-muted-foreground">Variáveis: <code class="text-xs bg-surface px-1.5 py-0.5 rounded">{titulo}</code> <code class="text-xs bg-surface px-1.5 py-0.5 rounded">{data}</code></p>
-      <Input v-model="filenamePattern" class="max-w-xs font-mono text-sm" />
+      <Input v-model="filenamePattern" class="max-w-xs font-mono text-sm" aria-label="Padrão de nome dos arquivos exportados" />
     </Card>
 
     <!-- Export múltiplo -->

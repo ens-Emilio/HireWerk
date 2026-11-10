@@ -25,7 +25,7 @@ function toggleMobileMenu() {
         <NuxtLink to="/" class="group flex items-center gap-2" @click="isMobileMenuOpen = false">
           <AppLogo variant="symbol" :size="30" class="group-hover:scale-105 transition-transform" />
           <span class="text-xl font-bold tracking-tight font-display">HireWerk</span>
-          <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary rounded-md border border-primary/20">Beta</span>
+          <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-primary text-primary-foreground rounded-md border border-primary/60">Beta</span>
         </NuxtLink>
 
         <nav class="hidden md:flex items-center gap-1" aria-label="Navegação principal">
@@ -178,7 +178,9 @@ function toggleMobileMenu() {
 
 <style scoped>
 .router-link-active.active-link {
-  color: hsl(var(--primary));
-  background-color: hsl(var(--primary) / 0.05);
+  /* amarelo puro não passa contraste AA sobre claro — usa tom escurecido p/ texto,
+     mantém o amarelo como marca só em elementos decorativos */
+  color: hsl(44 90% 25%);
+  background-color: hsl(var(--primary) / 0.12);
 }
 </style>
