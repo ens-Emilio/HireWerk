@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 64" width="210" height="64">
+  <!-- HireWerk · lockup horizontal: símbolo + wordmark -->
+  <title>HireWerk</title>
+  <rect x="0" y="0" width="64" height="64" rx="16" fill="#ffd02f"/>
+  <g transform="rotate(-4 32 32)">
+    <rect x="18" y="10" width="28" height="40" rx="3" fill="#17153a" opacity="0.18" transform="translate(2.5 3)"/>
+    <rect x="18" y="10" width="28" height="40" rx="3" fill="#ffffff"/>
+    <path d="M25 21 h4 v9 h6 v-9 h4 v22 h-4 v-9 h-6 v9 h-4 z" fill="#17153a"/>
+    <rect x="25" y="41" width="11" height="2.4" rx="1.2" fill="#e9e7f6"/>
+    <rect x="25" y="45.5" width="7" height="2.4" rx="1.2" fill="#e9e7f6"/>
+  </g>
+  <text x="76" y="43" font-family="Sora, Noto Sans, Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="-0.5" fill="#17153a">Hire<tspan fill="#4a5df9">Werk</tspan></text>
+</svg>

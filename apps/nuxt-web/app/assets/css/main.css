@@ -2,136 +2,143 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Base background and text (Light Mode Default) */
-  --background: #FFFFFF;
-  --foreground: #0F172A;
-  --radius: 10px;
-  --border: #E2E8F0;
-  --muted: #64748B;
-  --ring: #2563EB;
-  --surface: #F8FAFC;
-  --surface-foreground: #0F172A;
-  --primary: #2563EB;
-  --primary-foreground: #FFFFFF;
-  --accent: #F59E0B;
-  --accent-foreground: #0F172A;
+@layer base {
+  :root {
+    /* HireWerk DS: papel branco quente, tinta índigo, amarelo como accent de ação */
+    --background: 45 100% 98%;
+    --foreground: 244 45% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 244 45% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 244 45% 16%;
+    --primary: 47 100% 59%;
+    --primary-foreground: 244 45% 16%;
+    --secondary: 233 94% 64%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 244 39% 93%;
+    --muted-foreground: 246 16% 44%;
+    --accent: 47 100% 59%;
+    --accent-foreground: 244 45% 16%;
+    --destructive: 0 58% 47%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 244 39% 92%;
+    --input: 244 39% 92%;
+    --ring: 233 94% 64%;
+    --border-soft: 244 39% 94%;
+    --radius: 0.875rem;
+    --surface: 47 100% 92%;
+    --surface-foreground: 244 45% 16%;
+    --success: 152 79% 27%;
+    --success-soft: 137 54% 90%;
+    --destructive-soft: 0 65% 94%;
+  }
 
-  /* Sombras utilitárias premium */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-}
-
-/* Dark Mode (Classe .dark no html) */
-:root.dark {
-  --background: #020617;
-  --foreground: #F8FAFC;
-  --border: #1E293B;
-  --muted: #94A3B8;
-  --ring: #3B82F6;
-  --surface: #0F172A;
-  --surface-foreground: #F8FAFC;
-  --primary: #3B82F6;
-  --accent: #F59E0B;
-}
-
-/* Media query fallback para sistema (opcional, pode ser removida se o JS controla tudo) */
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    /* Só aplica se não tiver classe .light forçada */
-    /* Mas como vamos usar class="dark", o JS controla melhor. Deixando vazio para evitar conflito. */
+  .dark {
+    --background: 250 32% 11%;
+    --foreground: 250 100% 97%;
+    --card: 246 33% 16%;
+    --card-foreground: 250 100% 97%;
+    --popover: 246 33% 16%;
+    --popover-foreground: 250 100% 97%;
+    --primary: 47 100% 59%;
+    --primary-foreground: 244 45% 16%;
+    --secondary: 229 100% 74%;
+    --secondary-foreground: 250 32% 11%;
+    --muted: 247 31% 24%;
+    --muted-foreground: 248 26% 71%;
+    --accent: 47 100% 59%;
+    --accent-foreground: 244 45% 16%;
+    --destructive: 0 100% 77%;
+    --destructive-foreground: 250 32% 11%;
+    --border: 247 29% 28%;
+    --input: 247 29% 28%;
+    --ring: 229 100% 74%;
+    --border-soft: 247 29% 24%;
+    --surface: 247 32% 22%;
+    --surface-foreground: 250 100% 97%;
+    --success: 149 55% 55%;
+    --success-soft: 152 40% 15%;
+    --destructive-soft: 353 34% 18%;
   }
 }
 
+@layer base {
+  * {
+    @apply border-border;
+  }
 
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  transition: background-color 0.3s ease, color 0.3s ease;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, hsl(var(--ring)) 45%, transparent);
+    border-radius: var(--radius);
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    border-width: 1px;
+    border-style: solid;
+    border-color: hsl(var(--input));
+    border-radius: var(--radius);
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--muted-foreground));
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: hsl(var(--ring));
+  }
 }
 
-/* Foco visível padrão para elementos interativos */
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-  border-radius: var(--radius);
-}
-
-/* Controles de formulário (borda visível por padrão) */
-input:not([type="checkbox"]):not([type="radio"]),
-select,
-textarea {
-  border-width: 1px;
-  border-style: solid;
-  border-color: var(--color-border);
-  border-radius: var(--radius);
-  background-color: var(--color-background);
-  color: var(--color-foreground);
-}
-
-/* Placeholder mais sutil e consistente com o tema */
-input::placeholder,
-textarea::placeholder {
-  color: var(--color-muted);
-}
-
-/* Realce adicional de borda no foco (além do outline visível) */
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--ring);
-}
-
-/* Utilitário para seções com surface e texto apropriado */
 .surface-section {
-  background-color: var(--color-surface);
-  color: var(--color-surface-foreground);
+  background-color: hsl(var(--surface));
+  color: hsl(var(--surface-foreground));
 }
 
-/* Seção padrão: espaçamento vertical consistente */
 .section {
   padding-top: 3rem;
   padding-bottom: 3rem;
 }
 
-/* Grid padrão para cards responsivos */
 .card-grid {
   display: grid;
   gap: 1rem;
 }
 
 @media (min-width: 640px) {
-
-  /* sm */
   .card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1024px) {
-
-  /* lg */
   .card-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-/* Preview A4 vertical (neutro) */
 .a4-preview {
   width: 100%;
   max-width: 380px;
-  /* reduzido para ficar mais compacto */
   aspect-ratio: 1 / 1.414;
-  /* A4 */
   background: transparent;
   display: flex;
   align-items: center;
@@ -142,27 +149,26 @@ textarea:focus {
   width: 100%;
   height: 100%;
   background: #ffffff;
-  /* sempre branco para simular papel */
   color: #333333;
-  /* cinza para contraste */
-  /* Congela tokens internos para preview/impressão neutros */
   --color-background: #ffffff;
   --color-foreground: #333333;
   --color-border: #cccccc;
   --color-surface: #f5f5f5;
   --color-surface-foreground: #333333;
+  --background: 0 0% 100%;
+  --foreground: 0 0% 20%;
+  --border: 0 0% 80%;
+  --surface: 0 0% 96%;
+  --surface-foreground: 0 0% 20%;
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.08);
   border-radius: 4px;
-  /* papel geralmente sem radius acentuado */
   padding: 24px;
   overflow: hidden;
   font-size: 12px;
-  /* base para conteúdo de currículo */
   line-height: 1.5;
 }
 
-/* Tipografia e utilitários internos do A4 */
 .a4-page h1 {
   font-size: 18px;
   font-weight: 600;
@@ -175,7 +181,6 @@ textarea:focus {
   text-transform: uppercase;
   letter-spacing: 0.02em;
   color: #374151;
-  /* gray-700 */
   margin: 12px 0 4px 0;
 }
 
@@ -188,22 +193,20 @@ textarea:focus {
 }
 
 .a4-page .chip {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--surface));
   border-radius: 9999px;
   padding: 2px 6px;
   font-size: 10px;
 }
 
-/* Utilitário de cor de sucesso */
 .text-success {
-  color: var(--color-success);
+  color: hsl(var(--success));
 }
 
-/* Link utilitário opt-in: use className="link" para padronizar */
 a.link,
 .link {
-  color: var(--color-accent);
+  color: hsl(var(--accent));
   text-decoration: none;
 }
 
@@ -212,41 +215,23 @@ a.link:hover,
   text-decoration: underline;
 }
 
-/* Remover sombras/bordas no PDF/Impressão para saída limpa */
 @media print {
-
-  /* Configuração da página */
   @page {
     size: A4;
     margin: 0;
-    /* Margem zero para controle total via CSS */
   }
 
-  /* Ocultar elementos de UI */
+  /* Esconde o chrome do app; NÃO usar seletores globais (.grid, header, button)
+     que também atingem o template do currículo e apagam conteúdo do PDF. */
   nav,
-  header,
-  footer,
-  .no-print,
-  .app-sidebar,
-  button,
-  select,
-  input[type="range"],
+  .app-header,
+  .app-footer,
   .toolbar,
-  .bg-surface,
-  a[href^="/"],
-  /* Links de navegação */
-  .grid,
-  /* Grid do layout */
-  .fixed,
-  /* Elementos fixos */
-  .sticky
-
-  /* Elementos sticky */
-    {
+  .editor-column,
+  .no-print,
+  button:not(.a4-page button) {
     display: none !important;
   }
-
-  /* Exceção: O container do preview deve ser visível, mas sem grid */
   .editor-layout,
   .preview-container,
   .a4-preview,
@@ -265,17 +250,14 @@ a.link:hover,
     overflow: visible !important;
   }
 
-  /* Resetar o scale do zoom */
   .scale-zoom {
     transform: none !important;
   }
 
-  /* Ocultar a coluna de edição explicitamente se o seletor .grid acima for muito genérico */
   .editor-column {
     display: none !important;
   }
 
-  /* Forçar fundo branco e texto preto globalmente */
   body {
     background: white !important;
     color: black !important;
@@ -284,7 +266,6 @@ a.link:hover,
     overflow: visible !important;
   }
 
-  /* Evitar quebras de página dentro de elementos */
   .no-break,
   .a4-page h2,
   .a4-page .experience-item,
@@ -292,19 +273,17 @@ a.link:hover,
     page-break-inside: avoid;
   }
 
-  /* Forçar quebra de página */
   .page-break {
     page-break-after: always;
   }
 
-  /* Otimizar cores para impressão */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    animation: none !important;
   }
 }
 
-/* Classes utilitárias para impressão */
 .print-hidden {
   display: none !important;
 }
@@ -312,5 +291,17 @@ a.link:hover,
 @media print {
   .print-only {
     display: block !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }

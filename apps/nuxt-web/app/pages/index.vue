@@ -1,78 +1,150 @@
 <script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { Button } from '~/components/ui/button'
+import { Card } from '~/components/ui/card'
+const sheet = ref<HTMLElement | null>(null)
+const stage = ref<HTMLElement | null>(null)
+
+function handleMove(e: MouseEvent) {
+  if (!stage.value || !sheet.value) return
+  const r = stage.value.getBoundingClientRect()
+  const x = (e.clientX - r.left) / r.width - 0.5
+  const y = (e.clientY - r.top) / r.height - 0.5
+  sheet.value.style.transform = `rotateY(${x * 26}deg) rotateX(${-y * 18}deg)`
+}
+
+function handleLeave() {
+  if (sheet.value) sheet.value.style.transform = 'rotateY(0) rotateX(0)'
+}
+
+let reduced = false
+onMounted(() => {
+  reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    || localStorage.getItem('hirewerk-3d-off') === '1'
+  if (reduced || !stage.value) return
+  stage.value.addEventListener('mousemove', handleMove)
+  stage.value.addEventListener('mouseleave', handleLeave)
+})
+
+onBeforeUnmount(() => {
+  if (!stage.value) return
+  stage.value.removeEventListener('mousemove', handleMove)
+  stage.value.removeEventListener('mouseleave', handleLeave)
+})
 </script>
 
 <template>
   <div class="relative overflow-hidden">
-    <!-- Background Glows -->
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] bg-primary/5 blur-[120px] rounded-full -z-10"></div>
-    
-    <!-- Hero Section -->
-    <div class="max-w-5xl mx-auto pt-20 pb-24 px-4 text-center">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-8 animate-fade-in">
-        🚀 100% Client-Side & Gratuito
-      </div>
-      
-      <h1 class="text-5xl md:text-7xl font-black tracking-tight text-foreground mb-6 leading-[1.1]">
-        Crie currículos que chamam a <span class="text-primary">atenção</span>.
-      </h1>
-      
-      <p class="text-xl md:text-2xl text-muted max-w-2xl mx-auto mb-12 leading-relaxed">
-        Edite, visualize em tempo real e exporte para PDF em segundos. Seus dados nunca saem do seu navegador.
-      </p>
-      
-      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-        <NuxtLink 
-          to="/dashboard"
-          class="w-full sm:w-auto inline-flex h-14 items-center justify-center rounded-2xl bg-primary px-10 text-lg font-bold text-primary-foreground shadow-xl shadow-primary/20 hover:bg-primary/90 hover:-translate-y-1 transition-all active:scale-95"
-        >
-          Começar Agora
-        </NuxtLink>
-        <NuxtLink 
-          to="/templates"
-          class="w-full sm:w-auto inline-flex h-14 items-center justify-center rounded-2xl border border-border bg-surface px-10 text-lg font-bold text-foreground hover:bg-background transition-all"
-        >
-          Ver Modelos
-        </NuxtLink>
+    <div class="max-w-5xl mx-auto pt-20 pb-24 px-4">
+      <div class="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center">
+        <div>
+          <p class="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground mb-3 before:content-[''] before:w-6 before:h-[3px] before:rounded before:bg-primary">
+            Grátis, sem cadastro, e seus dados ficam só com você
+          </p>
+          <h1 class="font-display text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-tight">
+            O currículo pronto em minutos, não em horas
+          </h1>
+          <p class="mt-4 text-lg text-muted-foreground max-w-[52ch] leading-relaxed">
+            Escreva, escolha o visual e compartilhe um link bonito. Tudo funciona no seu aparelho: nada é enviado para servidores, nada é vendido, nada desaparece.
+          </p>
+          <div class="flex flex-wrap gap-3 mt-6">
+            <Button as-child size="lg" class="rounded-xl font-bold shadow-lg shadow-primary/25 hover:-translate-y-0.5 transition-transform">
+              <NuxtLink to="/dashboard">Criar meu primeiro currículo</NuxtLink>
+            </Button>
+            <Button as-child variant="outline" size="lg" class="rounded-xl font-bold">
+              <NuxtLink to="/templates">Explorar os modelos</NuxtLink>
+            </Button>
+          </div>
+        </div>
+
+        <figure class="stage-3d hidden lg:grid place-items-center min-h-[420px]" ref="stage">
+          <div class="a4-3d" ref="sheet">
+            <div class="a4-face">
+              <div>
+                <div class="font-display font-bold text-lg md:text-xl">Maria Silva</div>
+                <div class="text-[11px] text-[#6b67a0] uppercase tracking-widest mt-0.5">Designer de produto</div>
+              </div>
+              <div>
+                <div class="a4-line w-[85%]"></div>
+                <div class="a4-line w-[60%]"></div>
+                <div class="a4-line w-[75%]"></div>
+                <div class="flex gap-1.5 flex-wrap mt-2.5">
+                  <span class="a4-chip" style="background:#fff7d6">Figma</span>
+                  <span class="a4-chip bg-[#ffe3f3]">Pesquisa</span>
+                  <span class="a4-chip bg-[#d8f6f2]">Protótipos</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <figcaption class="mt-4 text-xs text-muted-foreground text-center max-w-[40ch]">
+            Passe o cursor sobre a folha: é assim que seu currículo aparece enquanto você escreve.
+          </figcaption>
+        </figure>
       </div>
     </div>
 
-    <!-- Features Grid -->
-    <div class="max-w-6xl mx-auto px-4 pb-32">
-      <div class="grid md:grid-cols-3 gap-8">
-        <div class="bg-surface border border-border p-8 rounded-3xl shadow-sm hover:shadow-xl transition-all hover:border-primary/20">
-          <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6">
-            <Icon name="lucide:zap" class="w-6 h-6" />
-          </div>
-          <h3 class="text-xl font-bold mb-3 text-foreground">Velocidade Extrema</h3>
-          <p class="text-muted leading-relaxed">Interface ultra responsiva com preview em tempo real enquanto você digita.</p>
-        </div>
-
-        <div class="bg-surface border border-border p-8 rounded-3xl shadow-sm hover:shadow-xl transition-all hover:border-primary/20">
-          <div class="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center text-accent mb-6">
-            <Icon name="lucide:shield-check" class="w-6 h-6" />
-          </div>
-          <h3 class="text-xl font-bold mb-3 text-foreground">Privacidade Total</h3>
-          <p class="text-muted leading-relaxed">Seus dados são salvos apenas no seu localStorage. Privacidade por design.</p>
-        </div>
-
-        <div class="bg-surface border border-border p-8 rounded-3xl shadow-sm hover:shadow-xl transition-all hover:border-primary/20">
-          <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6">
-            <Icon name="lucide:layout" class="w-6 h-6" />
-          </div>
-          <h3 class="text-xl font-bold mb-3 text-foreground">Design Profissional</h3>
-          <p class="text-muted leading-relaxed">Modelos otimizados para sistemas de leitura de currículos (ATS).</p>
-        </div>
+    <div class="max-w-5xl mx-auto px-4 pb-28 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+      <div class="rounded-3xl bg-surface p-8 grid gap-3 content-start border border-border-soft">
+        <h3 class="font-display text-2xl font-bold text-foreground">Seus dados são só seus</h3>
+        <p class="text-muted-foreground leading-relaxed">
+          Não existe servidor para vazar nada. Seus currículos ficam guardados apenas no seu próprio aparelho, invisíveis para qualquer outra pessoa. Se um dia quiser levar tudo, baixe uma cópia com um clique.
+        </p>
+        <Button as-child variant="blue" class="self-start rounded-xl font-bold">
+          <NuxtLink to="/dashboard">Ver como funciona</NuxtLink>
+        </Button>
+      </div>
+      <div class="grid gap-6">
+        <Card class="p-6 rounded-3xl">
+          <h3 class="font-display text-xl font-bold text-foreground">Salva sozinho, sempre</h3>
+          <p class="mt-2 text-sm text-muted-foreground leading-relaxed">
+            Enquanto você escreve, tudo é salvo automaticamente. Errou? Dê um passo atrás e recupere qualquer versão anterior, mesmo depois de fechar a página.
+          </p>
+        </Card>
+        <Card class="p-6 rounded-3xl">
+          <h3 class="font-display text-xl font-bold text-foreground">Sai exatamente como você vê</h3>
+          <p class="mt-2 text-sm text-muted-foreground leading-relaxed">
+            Um clique e o PDF sai limpo: só a folha, sem menus nem botões. O que a empresa recebe é exatamente o que você vê na tela.
+          </p>
+        </Card>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.stage-3d { perspective: 1200px; }
+.a4-3d {
+  width: min(320px, 78vw);
+  aspect-ratio: 210 / 297;
+  transform-style: preserve-3d;
+  transition: transform 120ms linear;
+  will-change: transform;
+  position: relative;
 }
-.animate-fade-in {
-  animation: fade-in 0.8s ease-out forwards;
+.a4-face {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  color: #17153a;
+  border-radius: 6px;
+  box-shadow: 0 18px 44px rgba(23, 21, 58, 0.18);
+  padding: 8%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 6%;
+}
+.dark .a4-face { background: #fdfcff; }
+.a4-line {
+  height: 6px;
+  border-radius: 3px;
+  background: #e9e7f6;
+  margin-top: 7px;
+}
+.a4-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 99px;
+  color: #17153a;
 }
 </style>
