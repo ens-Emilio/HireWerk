@@ -70,21 +70,23 @@ apps/nuxt-web/app/
 └── stores/            # Estado global com Pinia
 ```
 
-## 📦 Deploy (Netlify)
+## 📦 Deploy (Cloudflare Pages)
 
-O projeto está configurado para deploy contínuo via `netlify.toml`.
+O projeto é 100% estático (`nuxt generate`) e deploya no Cloudflare Pages.
 
-```toml
-[build]
-  base = "apps/nuxt-web"
-  command = "bun run generate" # Gera site estático puro
-  publish = ".output/public"
+```bash
+# Deploy local (requer login no Cloudflare)
+bunx wrangler pages deploy
+
+# Ou via Git: conecte o repo no dashboard do Cloudflare Pages
+# Build command: bun run generate · Output: .output/public
 ```
 
+SPA fallback configurado via `public/_redirects` (`/* → /200.html`).
+
 ## 📝 Documentação Complementar
-
-- [Mapeamento da Codebase](MAPEAMENTO.md) - Guia detalhado de cada arquivo e função.
-
+- [Roadmap de 100 Features](ROADMAP-100.md) - Plano de fases para evoluir o produto.
+- [Spec Backend (F10)](F10-BACKEND-SPEC.md) - Spec das features que exigem servidor (gate de produto).
 ---
 
 ### Versão Beta 1.0.0
