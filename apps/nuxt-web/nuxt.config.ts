@@ -114,6 +114,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      htmlAttrs: { lang: 'pt-BR' },
       title: 'HireWerk',
       script: [
         {

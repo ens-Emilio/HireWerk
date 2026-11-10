@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { Toaster } from 'vue-sonner'
+
+useHead({
+  htmlAttrs: { lang: 'pt-BR' },
+})
 </script>
 
 <template>
