@@ -1,0 +1,40 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies
+node_modules
+bun.lock
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+.vscode
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Local Storage (dev)
+*.sqlite
+*.sqlite-journal
+/wrangler
+.wrangler/
+apps/nuxt-web/wrangler.toml
+MAPEAMENTO.md
+MAPEAMENTO-TELAS.md
+PLAN.md
+ROADMAP-100.md
+F10-BACKEND-SPEC.md
+design/
+PLAN-PALETA-NOVA.md
