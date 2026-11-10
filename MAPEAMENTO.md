@@ -1136,19 +1136,15 @@ export default defineNuxtConfig({
 
 ## 🚀 Deploy Real
 
-### **netlify.toml**
+### **wrangler.toml** (`apps/nuxt-web/`)
 
 ```toml
-[build]
-  base = "apps/nuxt-web"
-  command = "npm install && npm run build"
-  publish = "dist"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+name = "hirewerk"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = ".output/public"
 ```
+
+Build: `bun run generate` → `public/_redirects` faz o SPA fallback (`/* → /200.html`).
 
 ### **GitHub Actions:** `.github/workflows/ci.yml`
 

@@ -1,0 +1,978 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HireWerk · Design System</title>
+<script>
+  // Tema antes da primeira pintura, como no app real (anti-FOUC)
+  (function () {
+    try {
+      var t = localStorage.getItem("hirewerk-theme") || "light";
+      document.documentElement.dataset.theme = t;
+    } catch (e) { document.documentElement.dataset.theme = "light"; }
+  })();
+</script>
+<style>
+  /* ============================================================
+     HIREWERK DESIGN SYSTEM · Tokens
+     Direção: papel branco, tinta índigo-quase-preta, amarelo
+     ensolarado como assinatura de ação, acentos pastel por contexto.
+     ============================================================ */
+  :root {
+    --bg: #fffdf5;
+    --surface: #ffffff;
+    --surface-warm: #fff7d6;
+    --fg: #17153a;
+    --fg-2: #3a3760;
+    --muted: #5d5a80;
+    --meta: #6f6b93;
+    --border: #e4e1f2;
+    --border-soft: #eeecf8;
+    --accent: #ffd02f;
+    --accent-on: #17153a;
+    --accent-hover: #f5c414;
+    --blue: #4a5df9;
+    --blue-on: #ffffff;
+    --success: #0e7a4a;
+    --success-soft: #d9f3e5;
+    --danger: #c22f2f;
+    --danger-soft: #fbe3e3;
+    --coral-soft: #ffe1e1;
+    --teal-soft: #d8f6f2;
+    --rose-soft: #ffe3f3;
+    --shadow-raised: 0 18px 44px rgba(23, 21, 58, 0.14);
+    --shadow-ring: 0 0 0 1px var(--border);
+    --focus-ring: 0 0 0 3px rgba(74, 93, 249, 0.45);
+    --font-display: "Sora", "Noto Sans", Arial, sans-serif;
+    --font-body: "Noto Sans", Arial, sans-serif;
+    --text-xs: 12px;
+    --text-sm: 14px;
+    --text-base: 16px;
+    --text-lg: 18px;
+    --text-xl: 22px;
+    --text-2xl: clamp(26px, 4vw, 34px);
+    --text-3xl: clamp(32px, 6vw, 52px);
+    --leading: 1.55;
+    --leading-tight: 1.12;
+    --tracking-display: -0.02em;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px;
+    --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
+    --r-sm: 8px; --r-md: 14px; --r-lg: 22px; --r-pill: 999px;
+    --motion: 220ms;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --container: 1180px;
+  }
+  [data-theme="dark"] {
+    --bg: #131126;
+    --surface: #1c1936;
+    --surface-warm: #26224a;
+    --fg: #f2f0ff;
+    --fg-2: #cfcbf0;
+    --muted: #a49fcd;
+    --meta: #a49fcd;
+    --border: #33305a;
+    --border-soft: #2a2750;
+    --accent: #ffd02f;
+    --accent-on: #17153a;
+    --accent-hover: #ffdd66;
+    --blue: #7b8bff;
+    --blue-on: #131126;
+    --success: #4ccf95;
+    --success-soft: #16352a;
+    --danger: #ff8a8a;
+    --danger-soft: #3d1d24;
+    --coral-soft: #3a2126;
+    --teal-soft: #16323a;
+    --rose-soft: #3a2135;
+    --shadow-raised: 0 18px 44px rgba(0, 0, 0, 0.5);
+    --shadow-ring: 0 0 0 1px var(--border);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 400 var(--text-base)/var(--leading) var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 { font-family: var(--font-display); line-height: var(--leading-tight); letter-spacing: var(--tracking-display); margin: 0; }
+  p { margin: 0; }
+  a { color: var(--blue); }
+  button, input, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--r-sm); }
+
+  .container { max-width: var(--container); margin-inline: auto; padding-inline: clamp(16px, 4vw, 36px); }
+
+  /* ================= Cabeçalho do showcase ================= */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in oklab, var(--bg), transparent 6%);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .topbar-inner { display: flex; align-items: center; gap: var(--s-4); min-height: 60px; padding-block: var(--s-2); flex-wrap: wrap; }
+  .wordmark { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 19px; letter-spacing: -0.02em; text-decoration: none; color: var(--fg); }
+  .wordmark .dot { width: 26px; height: 26px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; color: var(--accent-on); font-size: 13px; font-weight: 800; }
+  .screen-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+  .screen-tabs button {
+    border: 1px solid transparent; background: transparent; cursor: pointer;
+    padding: 9px 14px; border-radius: var(--r-sm); color: var(--muted);
+    min-height: 44px; transition: color var(--motion) var(--ease), background var(--motion) var(--ease);
+  }
+  .screen-tabs button:hover { color: var(--fg); background: var(--surface-warm); }
+  .screen-tabs button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: var(--shadow-ring); font-weight: 600; }
+  .theme-btn {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface);
+    padding: 9px 14px; border-radius: var(--r-sm); min-height: 44px;
+  }
+  .theme-btn:hover { border-color: var(--accent); }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: panelIn var(--motion) var(--ease); }
+  @keyframes panelIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* ================= Botões ================= */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 0 var(--s-5); border-radius: var(--r-md);
+    border: 1px solid transparent; cursor: pointer; text-decoration: none;
+    font-weight: 700; font-size: var(--text-sm);
+    transition: background var(--motion) var(--ease), border-color var(--motion) var(--ease), transform var(--motion) var(--ease);
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: var(--accent-on); }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-blue { background: var(--blue); color: var(--blue-on); }
+  .btn-blue:hover { filter: brightness(1.08); }
+  .btn-ghost { background: var(--surface); color: var(--fg); border-color: var(--border); }
+  .btn-ghost:hover { border-color: var(--fg); }
+  .btn-danger { background: var(--danger-soft); color: var(--danger); border-color: transparent; }
+  .btn-sm { min-height: 38px; padding: 0 12px; font-size: 13px; }
+  .icon-btn { width: 44px; height: 44px; padding: 0; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: inline-grid; place-items: center; }
+  .icon-btn:hover { border-color: var(--accent); }
+  .icon-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+  /* ================= Formulários ================= */
+  .field { display: grid; gap: 6px; }
+  .field label { font-size: var(--text-sm); font-weight: 700; color: var(--fg-2); }
+  .input {
+    width: 100%; min-height: 46px; padding: 0 14px;
+    border: 1px solid var(--border); border-radius: var(--r-sm);
+    background: var(--surface);
+  }
+  .input:focus-visible { border-color: var(--blue); }
+  textarea.input { padding: 12px 14px; resize: vertical; min-height: 88px; }
+
+  /* ================= Cards / badges ================= */
+  .card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--r-lg); box-shadow: var(--shadow-ring); }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--r-pill); font-size: var(--text-xs); font-weight: 700; }
+  .badge-save { background: var(--success-soft); color: var(--success); }
+  .badge-sample { background: var(--surface-warm); color: var(--fg-2); }
+  .badge-del { background: var(--danger-soft); color: var(--danger); }
+
+  /* ================= Toast ================= */
+  #toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 80px);
+    background: var(--fg); color: var(--bg); padding: 12px 18px; border-radius: var(--r-md);
+    font-size: var(--text-sm); font-weight: 600; z-index: 200;
+    transition: transform var(--motion) var(--ease), opacity var(--motion) var(--ease);
+    opacity: 0; pointer-events: none; max-width: min(92vw, 480px);
+  }
+  #toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+  /* ================= Landing ================= */
+  .hero { padding-block: var(--s-16) var(--s-12); }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr); gap: var(--s-10); align-items: center; }
+  .hero h1 { font-size: var(--text-3xl); }
+  .hero .lede { margin-top: var(--s-4); color: var(--fg-2); font-size: var(--text-lg); max-width: 52ch; }
+  .hero .actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
+  .kicker { font-size: var(--text-sm); font-weight: 700; color: var(--muted); margin-bottom: var(--s-3); display: inline-flex; align-items: center; gap: 8px; }
+  .kicker::before { content: ""; width: 22px; height: 3px; border-radius: 2px; background: var(--accent); }
+
+  /* Folha A4 em 3D: o objeto é o produto, o tilt mostra o papel de verdade */
+  .stage3d { perspective: 1200px; display: grid; place-items: center; min-height: 420px; }
+  .a4-3d {
+    width: min(320px, 78vw); aspect-ratio: 210 / 297;
+    transform-style: preserve-3d; transition: transform 120ms linear;
+    will-change: transform;
+  }
+  .a4-face {
+    position: absolute; inset: 0; background: #fff; color: #17153a;
+    border-radius: 6px; box-shadow: var(--shadow-raised);
+    padding: 8%; display: grid; grid-template-rows: auto 1fr; gap: 6%;
+    backface-visibility: hidden;
+  }
+  [data-theme="dark"] .a4-face { background: #fdfcff; }
+  .a4-name { font-family: var(--font-display); font-weight: 700; font-size: clamp(16px, 2.2vw, 21px); }
+  .a4-role { font-size: clamp(9px, 1.2vw, 11px); color: #6b67a0; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+  .a4-line { height: 6px; border-radius: 3px; background: #e9e7f6; margin-top: 7px; }
+  .a4-line.w60 { width: 60%; } .a4-line.w85 { width: 85%; } .a4-line.w75 { width: 75%; }
+  .a4-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
+  .a4-chip { font-size: clamp(8px, 1vw, 10px); font-weight: 700; padding: 3px 8px; border-radius: 99px; background: var(--surface-warm, #fff7d6); color: #17153a; }
+  .a4-chip.c2 { background: #ffe3f3; } .a4-chip.c3 { background: #d8f6f2; }
+  .stage3d figcaption { margin-top: var(--s-4); font-size: var(--text-xs); color: var(--meta); text-align: center; max-width: 40ch; }
+
+  .benefits { display: grid; gap: var(--s-4); grid-template-columns: 1.2fr 1fr; padding-bottom: var(--s-16); }
+  .benefit { padding: var(--s-6); }
+  .benefit h3 { font-size: var(--text-xl); }
+  .benefit p { margin-top: var(--s-2); color: var(--muted); font-size: var(--text-sm); }
+  .benefit-main { background: var(--surface-warm); border-radius: var(--r-lg); padding: var(--s-8); display: grid; gap: var(--s-3); align-content: start; }
+  .benefit-main h3 { font-size: var(--text-2xl); }
+  .benefit-stack { display: grid; gap: var(--s-4); }
+
+  /* ================= Dashboard ================= */
+  .screen-head { display: flex; align-items: baseline; gap: var(--s-4); flex-wrap: wrap; padding-block: var(--s-10) var(--s-6); }
+  .screen-head h2 { font-size: var(--text-2xl); }
+  .screen-head .spacer { margin-left: auto; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--s-4); }
+  .metric { padding: var(--s-5); }
+  .metric .num { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; }
+  .metric .lbl { color: var(--muted); font-size: var(--text-sm); margin-top: 2px; }
+  .shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin-top: var(--s-5); }
+  .shortcut { padding: var(--s-6); text-decoration: none; color: inherit; display: grid; gap: 6px; transition: transform var(--motion) var(--ease), box-shadow var(--motion) var(--ease); }
+  .shortcut:hover { transform: translateY(-2px) rotate(-0.3deg); box-shadow: var(--shadow-raised); }
+  .shortcut strong { font-family: var(--font-display); font-size: var(--text-lg); }
+  .shortcut span { color: var(--muted); font-size: var(--text-sm); }
+
+  /* ================= Lista de currículos ================= */
+  .resume-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--s-4); padding-bottom: var(--s-16); }
+  .resume-card { padding: var(--s-5); display: grid; gap: var(--s-3); align-content: start; }
+  .resume-card .thumb { border-radius: var(--r-md); border: 1px solid var(--border-soft); background: var(--surface-warm); padding: var(--s-4); display: grid; gap: 6px; }
+  .resume-card h3 { font-size: var(--text-lg); }
+  .resume-card .meta { color: var(--meta); font-size: var(--text-xs); }
+  .card-actions { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+  .empty { text-align: center; padding: var(--s-16) var(--s-4); display: grid; gap: var(--s-3); justify-items: center; }
+  .empty .glyph { width: 64px; height: 64px; border-radius: var(--r-lg); background: var(--surface-warm); display: grid; place-items: center; font-size: 26px; font-weight: 800; color: var(--fg-2); font-family: var(--font-display); }
+
+  /* ================= Editor ================= */
+  .editor-toolbar { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; padding: var(--s-3) 0; border-bottom: 1px solid var(--border-soft); }
+  .title-input { border: 1px solid transparent; background: transparent; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); padding: 8px 10px; border-radius: var(--r-sm); min-width: 200px; }
+  .title-input:hover { border-color: var(--border); }
+  .title-input:focus-visible { border-color: var(--blue); }
+  .editor-layout { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--s-6); padding-block: var(--s-5) var(--s-16); align-items: start; }
+  .editor-col { display: grid; gap: var(--s-3); }
+  .section-card { overflow: hidden; }
+  .section-card > .sec-head { display: flex; align-items: center; width: 100%; background: none; border: 0; cursor: pointer; padding: var(--s-4) var(--s-5); gap: var(--s-3); text-align: left; }
+  .section-card > .sec-head h3 { font-size: var(--text-lg); }
+  .sec-chevron { margin-left: auto; transition: transform var(--motion) var(--ease); color: var(--muted); }
+  .section-card.collapsed .sec-chevron { transform: rotate(-90deg); }
+  .sec-body { padding: 0 var(--s-5) var(--s-5); display: grid; gap: var(--s-4); }
+  .section-card.collapsed .sec-body { display: none; }
+  .item-row { border: 1px solid var(--border-soft); border-radius: var(--r-md); padding: var(--s-4); display: grid; gap: var(--s-3); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+  .remove-btn { justify-self: start; }
+  .preview-col { position: sticky; top: 84px; }
+  .preview-shell { background: var(--surface-warm); border-radius: var(--r-lg); padding: var(--s-5); display: grid; justify-items: center; gap: var(--s-4); overflow: hidden; }
+  .zoom-row { display: flex; align-items: center; gap: var(--s-3); width: 100%; max-width: 360px; }
+  .zoom-row input[type="range"] { flex: 1; accent-color: var(--blue); min-height: 44px; }
+  .a4-wrap { transform-origin: top center; transition: transform var(--motion) var(--ease); }
+  .a4 {
+    width: min(430px, 100%); aspect-ratio: 210 / 297; background: #fff; color: #17153a;
+    border-radius: 4px; box-shadow: var(--shadow-raised); padding: 7%; display: grid;
+    grid-template-rows: auto auto 1fr; gap: 5%; font-size: 11px;
+  }
+  .a4 .a4-line { background: #e9e7f6; }
+  .mobile-tabs { display: none; gap: var(--s-2); padding: var(--s-3) 0; }
+  .mobile-tabs button { flex: 1; min-height: 44px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-weight: 700; }
+  .mobile-tabs button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-on); }
+
+  /* ================= Lixeira ================= */
+  .trash-list { display: grid; gap: var(--s-3); padding-bottom: var(--s-16); }
+  .trash-row { display: flex; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-5); flex-wrap: wrap; }
+  .trash-row .t-info { display: grid; gap: 2px; min-width: 200px; }
+  .trash-row .t-date { color: var(--meta); font-size: var(--text-xs); }
+  .trash-row .t-actions { margin-left: auto; display: flex; gap: var(--s-2); }
+
+  /* ================= Modelos ================= */
+  .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: var(--s-5); padding-bottom: var(--s-16); }
+  .tpl-card { padding: var(--s-4); display: grid; gap: var(--s-3); }
+  .tpl-preview { border-radius: var(--r-md); background: var(--surface-warm); padding: var(--s-4); display: grid; place-items: center; overflow: hidden; }
+  .tpl-preview .a4 { transform: scale(0.62); margin-block: -18%; }
+  .tpl-card h3 { font-size: var(--text-lg); }
+  .tpl-card p { color: var(--muted); font-size: var(--text-sm); }
+
+  /* ================= Visualizador ================= */
+  .viewer-wrap { padding-block: var(--s-10) var(--s-16); display: grid; gap: var(--s-6); justify-items: center; }
+  .viewer-card { max-width: 560px; width: 100%; padding: var(--s-6); display: grid; gap: var(--s-3); justify-items: center; text-align: center; }
+  .viewer-a4 { width: min(560px, 100%); }
+  .viewer-a4 .a4 { width: 100%; font-size: 13px; }
+
+  /* ================= Fundamentos (design system) ================= */
+  .ds-section { padding-block: var(--s-8) var(--s-16); display: grid; gap: var(--s-10); }
+  .ds-block h3 { font-size: var(--text-xl); margin-bottom: var(--s-4); }
+  .swatch-row { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+  .swatch { width: 108px; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--border-soft); background: var(--surface); }
+  .swatch .chip { height: 64px; }
+  .swatch .cap { padding: 8px 10px; font-size: var(--text-xs); color: var(--muted); }
+  .type-spec { display: grid; gap: var(--s-3); }
+  .type-spec .row { display: flex; align-items: baseline; gap: var(--s-4); flex-wrap: wrap; border-bottom: 1px dashed var(--border-soft); padding-bottom: var(--s-2); }
+  .type-spec .row small { color: var(--meta); min-width: 190px; }
+  .ds-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-5); align-items: start; }
+  .ds-demo { padding: var(--s-5); display: grid; gap: var(--s-3); justify-items: start; }
+  .state-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s-4); }
+  .state-card { padding: var(--s-5); display: grid; gap: var(--s-2); justify-items: center; text-align: center; align-content: start; }
+  .state-card .tag { font-size: var(--text-xs); font-weight: 700; color: var(--meta); }
+  .spinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--border); border-top-color: var(--blue); animation: spin 900ms linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .ds-note { color: var(--muted); font-size: var(--text-sm); max-width: 70ch; }
+
+  /* ================= Diálogo ================= */
+  dialog {
+    border: 0; padding: 0; border-radius: var(--r-lg);
+    background: var(--surface); color: var(--fg); box-shadow: var(--shadow-raised);
+    width: min(430px, 92vw);
+  }
+  dialog::backdrop { background: rgba(13, 11, 38, 0.55); }
+  .dlg-body { padding: var(--s-6); display: grid; gap: var(--s-3); }
+  .dlg-actions { display: flex; justify-content: flex-end; gap: var(--s-3); margin-top: var(--s-3); }
+
+  /* ================= Rodapé / navegação mobile ================= */
+  footer.site { border-top: 1px solid var(--border-soft); padding: var(--s-6) 0 calc(var(--s-6) + 72px); color: var(--meta); font-size: var(--text-sm); }
+  .bottom-nav {
+    display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+    background: var(--surface); border-top: 1px solid var(--border-soft);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    justify-content: space-around;
+  }
+  .bottom-nav button {
+    border: 0; background: none; cursor: pointer; color: var(--muted);
+    display: grid; justify-items: center; gap: 2px; font-size: 11px; font-weight: 600;
+    min-width: 60px; min-height: 48px; padding: 4px; border-radius: var(--r-sm);
+  }
+  .bottom-nav button[aria-selected="true"] { color: var(--fg); }
+  .bottom-nav button[aria-selected="true"] .bn-ico { background: var(--accent); color: var(--accent-on); }
+  .bn-ico { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 13px; }
+
+  /* ================= Responsivo ================= */
+  @media (max-width: 1020px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .stage3d { min-height: 340px; order: -1; }
+    .editor-layout { grid-template-columns: 1fr; }
+    .preview-col { position: static; }
+  }
+  @media (max-width: 720px) {
+    .benefits { grid-template-columns: 1fr; }
+    .shortcuts { grid-template-columns: 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .screen-tabs { display: none; }
+    .bottom-nav { display: flex; }
+    .mobile-tabs { display: flex; }
+    .hero { padding-block: var(--s-10) var(--s-8); }
+    .trash-row .t-actions { margin-left: 0; width: 100%; }
+    .trash-row .t-actions .btn { flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="wordmark" href="#inicio" data-goto="inicio"><img src="logo-hirewerk.svg" alt="" width="30" height="30" style="border-radius:8px;display:block" />HireWerk</a>
+    <nav class="screen-tabs" role="tablist" aria-label="Telas do protótipo">
+      <button role="tab" data-goto="inicio" aria-selected="true">Início</button>
+      <button role="tab" data-goto="fundamentos" aria-selected="false">Fundamentos</button>
+      <button role="tab" data-goto="dashboard" aria-selected="false">Dashboard</button>
+      <button role="tab" data-goto="resumes" aria-selected="false">Currículos</button>
+      <button role="tab" data-goto="editor" aria-selected="false">Editor</button>
+      <button role="tab" data-goto="lixeira" aria-selected="false">Lixeira</button>
+      <button role="tab" data-goto="modelos" aria-selected="false">Modelos</button>
+      <button role="tab" data-goto="viewer" aria-selected="false">Visualizador</button>
+    </nav>
+    <button class="theme-btn" id="themeToggle" aria-label="Alternar tema claro e escuro">
+      <span id="themeIco" aria-hidden="true">◐</span><span id="themeLbl">Escuro</span>
+    </button>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ============ TELA: LANDING / ============ -->
+  <section class="panel active" id="panel-inicio">
+    <div class="hero">
+      <div class="hero-grid">
+        <div>
+          <p class="kicker">Grátis, sem cadastro, e seus dados ficam só com você</p>
+          <h1>O currículo pronto em minutos, não em horas</h1>
+          <p class="lede">Escreva, escolha o visual e compartilhe um link bonito. Tudo funciona no seu aparelho: nada é enviado para servidores, nada é vendido, nada desaparece.</p>
+          <div class="actions">
+            <a class="btn btn-primary" href="#dashboard" data-goto="dashboard">Criar meu primeiro currículo</a>
+            <a class="btn btn-ghost" href="#modelos" data-goto="modelos">Explorar os modelos</a>
+          </div>
+        </div>
+        <figure class="stage3d" id="stage3d" style="margin:0">
+          <div class="a4-3d" id="a4-3d">
+            <div class="a4-face">
+              <div>
+                <div class="a4-name">Maria Silva</div>
+                <div class="a4-role">Designer de produto</div>
+              </div>
+              <div>
+                <div class="a4-line w85"></div>
+                <div class="a4-line w60"></div>
+                <div class="a4-line w75"></div>
+                <div class="a4-chips">
+                  <span class="a4-chip">Figma</span><span class="a4-chip c2">Pesquisa</span><span class="a4-chip c3">Protótipos</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <figcaption>Passe o cursor sobre a folha: é assim que seu currículo aparece enquanto você escreve.</figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <div class="benefits">
+      <div class="benefit-main">
+        <h3>Seus dados são só seus</h3>
+        <p>Não existe servidor para vazar nada. Seus currículos ficam guardados apenas no seu próprio aparelho, invisíveis para qualquer outra pessoa. Se um dia quiser levar tudo, baixe uma cópia com um clique.</p>
+        <a class="btn btn-blue" href="#dashboard" data-goto="dashboard">Ver como funciona</a>
+      </div>
+      <div class="benefit-stack">
+        <div class="benefit card">
+          <h3>Salva sozinho, sempre</h3>
+          <p>Enquanto você escreve, tudo é salvo automaticamente. Errou? Dê um passo atrás e recupere qualquer versão anterior, mesmo depois de fechar a página.</p>
+        </div>
+        <div class="benefit card">
+          <h3>Sai exatamente como você vê</h3>
+          <p>Um clique e o PDF sai limpo: só a folha, sem menus nem botões. O que a empresa recebe é exatamente o que você vê na tela.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TELA: FUNDAMENTOS ============ -->
+  <section class="panel" id="panel-fundamentos">
+    <div class="ds-section">
+      <div class="screen-head" style="padding-top:var(--s-10)">
+        <h2>Fundamentos do HireWerk</h2>
+        <span class="badge badge-sample">dados de amostra</span>
+      </div>
+
+      <div class="ds-block">
+        <h3>Cor</h3>
+        <p class="ds-note">Papel branco e tinta índigo para 90% da interface; o amarelo é o único acento de ação e aparece onde há um convite de clique. Cores pastel marcam contexto (sucesso, erro, categorias) sempre acompanhadas de texto, nunca sozinhas.</p>
+        <div class="swatch-row" style="margin-top:var(--s-4)">
+          <div class="swatch"><div class="chip" style="background:#ffd02f"></div><div class="cap">Accent · #ffd02f</div></div>
+          <div class="swatch"><div class="chip" style="background:#17153a"></div><div class="cap">Tinta · #17153a</div></div>
+          <div class="swatch"><div class="chip" style="background:#4a5df9"></div><div class="cap">Link · #4a5df9</div></div>
+          <div class="swatch"><div class="chip" style="background:#fff7d6"></div><div class="cap">Superfície quente</div></div>
+          <div class="swatch"><div class="chip" style="background:#0e7a4a"></div><div class="cap">Sucesso</div></div>
+          <div class="swatch"><div class="chip" style="background:#c22f2f"></div><div class="cap">Perigo</div></div>
+        </div>
+      </div>
+
+      <div class="ds-block">
+        <h3>Tipografia</h3>
+        <div class="type-spec">
+          <div class="row"><small>Display · Sora 700 · 52/1.12</small><span style="font-family:var(--font-display);font-weight:700;font-size:var(--text-3xl)">Currículo que abre portas</span></div>
+          <div class="row"><small>Título · Sora 700 · 34</small><span style="font-family:var(--font-display);font-weight:700;font-size:var(--text-2xl)">Editor com preview ao vivo</span></div>
+          <div class="row"><small>Corpo · Noto Sans 400 · 16/1.55</small><span style="font-size:var(--text-base)">Texto corrido de interface, formulários e descrições de modelo.</span></div>
+          <div class="row"><small>Legenda · Noto Sans 600 · 12</small><span style="font-size:var(--text-xs);font-weight:600">Salvo às 14:32 · versão 7</span></div>
+        </div>
+      </div>
+
+      <div class="ds-block">
+        <h3>Componentes</h3>
+        <div class="ds-grid">
+          <div class="card ds-demo">
+            <strong>Botões</strong>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-primary" id="demoToast">Ação primária</button>
+              <button class="btn btn-blue" id="demoToast2">Ação azul</button>
+              <button class="btn btn-ghost">Secundário</button>
+              <button class="btn btn-danger" data-dialog="dlg">Excluir</button>
+            </div>
+          </div>
+          <div class="card ds-demo">
+            <strong>Formulário</strong>
+            <div class="field" style="width:100%">
+              <label for="ds-email">E-mail</label>
+              <input class="input" id="ds-email" placeholder="seu@email.com" />
+            </div>
+            <div class="field" style="width:100%">
+              <label for="ds-resumo">Resumo profissional</label>
+              <textarea class="input" id="ds-resumo" placeholder="Duas linhas sobre você..."></textarea>
+            </div>
+          </div>
+          <div class="card ds-demo">
+            <strong>Status e badges</strong>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <span class="badge badge-save">Salvo</span>
+              <span class="badge badge-sample">Salvando…</span>
+              <span class="badge badge-del">Na lixeira</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ds-block">
+        <h3>Estados obrigatórios</h3>
+        <p class="ds-note">Toda tela de dados do app carrega os três estados abaixo, com causa e próximo passo escritos.</p>
+        <div class="state-row" style="margin-top:var(--s-4)">
+          <div class="card state-card">
+            <span class="tag">Carregando</span>
+            <div class="spinner" role="status" aria-label="Carregando currículos"></div>
+            <p>Carregando seus currículos…</p>
+          </div>
+          <div class="card state-card">
+            <span class="tag">Vazio</span>
+            <div class="glyph">H</div>
+            <p>Nenhum currículo ainda. Crie o primeiro agora, leva menos de um minuto.</p>
+            <button class="btn btn-primary btn-sm">Criar meu primeiro currículo</button>
+          </div>
+          <div class="card state-card">
+            <span class="tag">Erro</span>
+            <div class="glyph" style="background:var(--danger-soft);color:var(--danger)">!</div>
+            <p>Não conseguimos abrir este currículo. Ele pode ter sido excluído.</p>
+            <a class="btn btn-ghost btn-sm" href="#resumes" data-goto="resumes">Voltar à lista</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TELA: DASHBOARD ============ -->
+  <section class="panel" id="panel-dashboard">
+    <div class="screen-head">
+      <h2>Olá 👋 seu painel</h2>
+      <span class="badge badge-sample">dados de amostra</span>
+    </div>
+    <div class="metrics">
+      <div class="card metric"><div class="num">3</div><div class="lbl">currículos prontos</div></div>
+      <div class="card metric"><div class="num">1</div><div class="lbl">na lixeira, recuperável</div></div>
+      <div class="card metric"><div class="num">100%</div><div class="lbl">privado: nada sai do seu aparelho</div></div>
+    </div>
+    <div class="shortcuts">
+      <a class="card shortcut" href="#resumes" data-goto="resumes">
+        <strong>Meus currículos</strong>
+        <span>Editar, duplicar ou compartilhar os que já existem.</span>
+      </a>
+      <a class="card shortcut" href="#modelos" data-goto="modelos">
+        <strong>Modelos</strong>
+        <span>Escolher a cara do próximo currículo: clássico, minimalista ou moderno.</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ TELA: LISTA /resumes ============ -->
+  <section class="panel" id="panel-resumes">
+    <div class="screen-head">
+      <h2>Meus currículos</h2>
+      <span class="badge badge-sample">dados de amostra</span>
+      <span class="spacer"></span>
+      <button class="btn btn-primary" data-dialog="dlgNew">Novo currículo</button>
+    </div>
+    <div class="resume-grid">
+      <article class="card resume-card">
+        <div class="thumb"><span style="font-family:var(--font-display);font-weight:700">Currículo Designer</span><span class="a4-line w60"></span><span class="a4-line w85"></span></div>
+        <h3>Currículo Designer</h3>
+        <p class="meta">moderno · atualizado hoje</p>
+        <div class="card-actions">
+          <button class="btn btn-ghost btn-sm" data-toast="Link de compartilhamento copiado (demo)">Compartilhar</button>
+          <button class="btn btn-ghost btn-sm" data-toast="Currículo duplicado (demo)">Duplicar</button>
+          <button class="btn btn-ghost btn-sm" data-toast="Movido para a lixeira (demo)">Lixeira</button>
+          <button class="btn btn-primary btn-sm" data-goto="editor">Editar</button>
+        </div>
+      </article>
+      <article class="card resume-card">
+        <div class="thumb"><span style="font-family:var(--font-display);font-weight:700">Dev Front-end 2025</span><span class="a4-line w75"></span><span class="a4-line w60"></span></div>
+        <h3>Dev Front-end 2025</h3>
+        <p class="meta">clássico · atualizado ontem</p>
+        <div class="card-actions">
+          <button class="btn btn-ghost btn-sm" data-toast="Link de compartilhamento copiado (demo)">Compartilhar</button>
+          <button class="btn btn-ghost btn-sm" data-toast="Currículo duplicado (demo)">Duplicar</button>
+          <button class="btn btn-ghost btn-sm" data-toast="Movido para a lixeira (demo)">Lixeira</button>
+          <button class="btn btn-primary btn-sm" data-goto="editor">Editar</button>
+        </div>
+      </article>
+      <article class="card resume-card">
+        <div class="thumb"><span style="font-family:var(--font-display);font-weight:700">Estágio UX</span><span class="a4-line w85"></span><span class="a4-line w75"></span></div>
+        <h3>Estágio UX</h3>
+        <p class="meta">minimalista · atualizado há 3 dias</p>
+        <div class="card-actions">
+          <button class="btn btn-ghost btn-sm" data-toast="Link de compartilhamento copiado (demo)">Compartilhar</button>
+          <button class="btn btn-ghost btn-sm" data-toast="Currículo duplicado (demo)">Duplicar</button>
+          <button class="btn btn-ghost btn-sm" data-toast="Movido para a lixeira (demo)">Lixeira</button>
+          <button class="btn btn-primary btn-sm" data-goto="editor">Editar</button>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============ TELA: EDITOR /resumes/[id] ============ -->
+  <section class="panel" id="panel-editor">
+    <div class="editor-toolbar">
+      <input class="title-input" value="Currículo Designer" aria-label="Título do currículo" />
+      <span class="badge badge-save">Salvo</span>
+      <span style="margin-left:auto;display:flex;gap:6px">
+        <button class="icon-btn" aria-label="Desfazer" disabled>↺</button>
+        <button class="icon-btn" aria-label="Refazer" disabled>↻</button>
+      </span>
+      <button class="btn btn-ghost btn-sm" data-toast="PDF pronto para enviar (demo)">Baixar PDF</button>
+      <button class="btn btn-ghost btn-sm" data-toast="Cópia de segurança salva (demo)">Salvar cópia</button>
+      <button class="btn btn-ghost btn-sm" data-toast="Link de compartilhamento copiado (demo)">Compartilhar</button>
+      <button class="btn btn-ghost btn-sm" data-goto="modelos">Modelo</button>
+    </div>
+    <div class="mobile-tabs" role="group" aria-label="Alternar entre editar e visualizar (mobile)">
+      <button aria-pressed="true" id="tabEdit">Editar</button>
+      <button aria-pressed="false" id="tabView">Visualizar</button>
+    </div>
+    <div class="editor-layout">
+      <div class="editor-col" id="editorCol">
+        <div class="card section-card" id="sec-pessoal">
+          <button class="sec-head" aria-expanded="true">
+            <h3>Dados pessoais</h3><span class="sec-chevron">▾</span>
+          </button>
+          <div class="sec-body">
+            <div class="two-col">
+              <div class="field"><label for="f-nome">Nome</label><input class="input" id="f-nome" value="Maria Silva" /></div>
+              <div class="field"><label for="f-titulo">Título</label><input class="input" id="f-titulo" value="Designer de produto" /></div>
+            </div>
+            <div class="field"><label for="f-resumo">Resumo</label><textarea class="input" id="f-resumo">Designer com foco em produtos digitais e sistemas de design.</textarea></div>
+          </div>
+        </div>
+        <div class="card section-card" id="sec-exp">
+          <button class="sec-head" aria-expanded="true">
+            <h3>Experiência</h3><span class="sec-chevron">▾</span>
+          </button>
+          <div class="sec-body">
+            <div class="item-row">
+              <div class="two-col">
+                <div class="field"><label for="f-cargo">Cargo</label><input class="input" id="f-cargo" value="Designer Pleno" /></div>
+                <div class="field"><label for="f-empresa">Empresa</label><input class="input" id="f-empresa" value="Estúdio Norte" /></div>
+              </div>
+              <div class="two-col">
+                <div class="field"><label for="f-inicio">Início</label><input class="input" id="f-inicio" placeholder="2022" /></div>
+                <div class="field"><label for="f-fim">Fim</label><input class="input" id="f-fim" placeholder="atual" /></div>
+              </div>
+              <div class="field"><label for="f-desc">Descrição</label><textarea class="input" id="f-desc">Sistema de design e redesign do app principal.</textarea></div>
+              <button class="btn btn-danger btn-sm remove-btn" data-toast="Item removido (demo)">Remover experiência</button>
+            </div>
+            <button class="btn btn-ghost btn-sm" data-toast="Nova experiência adicionada (demo)">Adicionar experiência</button>
+          </div>
+        </div>
+        <div class="card section-card collapsed" id="sec-edu">
+          <button class="sec-head" aria-expanded="false">
+            <h3>Educação</h3><span class="sec-chevron">▾</span>
+          </button>
+          <div class="sec-body">
+            <div class="two-col">
+              <div class="field"><label for="f-curso">Curso</label><input class="input" id="f-curso" value="Design Gráfico" /></div>
+              <div class="field"><label for="f-inst">Instituição</label><input class="input" id="f-inst" value="UFPR" /></div>
+            </div>
+            <button class="btn btn-ghost btn-sm" data-toast="Nova formação adicionada (demo)">Adicionar formação</button>
+          </div>
+        </div>
+        <div class="card section-card collapsed" id="sec-skills">
+          <button class="sec-head" aria-expanded="false">
+            <h3>Habilidades</h3><span class="sec-chevron">▾</span>
+          </button>
+          <div class="sec-body">
+            <div class="field"><label for="f-sk1">Habilidade 1</label><input class="input" id="f-sk1" value="Figma" /></div>
+            <div class="field"><label for="f-sk2">Habilidade 2</label><input class="input" id="f-sk2" value="Pesquisa com usuários" /></div>
+            <button class="btn btn-ghost btn-sm" data-toast="Nova habilidade adicionada (demo)">Adicionar habilidade</button>
+          </div>
+        </div>
+      </div>
+      <div class="preview-col" id="previewCol">
+        <div class="preview-shell">
+          <div class="zoom-row">
+            <label for="zoom" style="font-size:var(--text-sm);font-weight:700">Zoom</label>
+            <input type="range" id="zoom" min="50" max="100" value="100" />
+            <output id="zoomOut" for="zoom" style="font-size:var(--text-sm);min-width:44px;text-align:right">100%</output>
+          </div>
+          <div class="a4-wrap" id="a4Wrap">
+            <div class="a4">
+              <div>
+                <div class="a4-name" style="font-size:20px">Maria Silva</div>
+                <div class="a4-role">Designer de produto</div>
+              </div>
+              <div class="a4-line w60"></div>
+              <div>
+                <p style="font-weight:700;margin-bottom:4px">Experiência</p>
+                <div class="a4-line w85"></div><div class="a4-line w75"></div><div class="a4-line w85"></div>
+                <p style="font-weight:700;margin:8px 0 4px">Educação</p>
+                <div class="a4-line w60"></div>
+                <div class="a4-chips" style="margin-top:8px">
+                  <span class="a4-chip">Figma</span><span class="a4-chip c2">Pesquisa</span><span class="a4-chip c3">Protótipos</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TELA: LIXEIRA ============ -->
+  <section class="panel" id="panel-lixeira">
+    <div class="screen-head">
+      <h2>Lixeira</h2>
+      <span class="badge badge-sample">dados de amostra</span>
+      <span class="spacer"></span>
+      <button class="btn btn-danger" data-dialog="dlgEmpty">Esvaziar lixeira</button>
+    </div>
+    <div class="trash-list">
+      <div class="card trash-row">
+        <div class="t-info">
+          <strong>Currículo antigo 2023</strong>
+          <span class="t-date">removido em 4 de novembro de 2025</span>
+        </div>
+        <div class="t-actions">
+          <button class="btn btn-ghost btn-sm" data-toast="Currículo restaurado (demo)">Restaurar</button>
+          <button class="btn btn-danger btn-sm" data-dialog="dlgDelete">Excluir de vez</button>
+        </div>
+      </div>
+    </div>
+    <div class="empty" style="padding-block:var(--s-8)">
+      <div class="glyph">H</div>
+      <p style="color:var(--muted)">Quando a lixeira esvaziar, este estado ocupa o lugar da lista, com link de volta aos currículos.</p>
+      <a class="btn btn-ghost btn-sm" href="#resumes" data-goto="resumes">Ver currículos ativos</a>
+    </div>
+  </section>
+
+  <!-- ============ TELA: MODELOS ============ -->
+  <section class="panel" id="panel-modelos">
+    <div class="screen-head">
+      <h2>Modelos</h2>
+      <span class="badge badge-sample">preview com dados de amostra</span>
+    </div>
+    <div class="tpl-grid">
+      <article class="card tpl-card">
+        <div class="tpl-preview"><div class="a4"><div><div class="a4-name" style="font-size:15px">Maria Silva</div><div class="a4-role">Designer</div></div><div class="a4-line w85"></div><div><div class="a4-line w60"></div><div class="a4-line w75"></div></div></div></div>
+        <h3>Clássico</h3>
+        <p>Estrutura tradicional, seguro para processos formais.</p>
+        <button class="btn btn-primary" data-toast="Modelo clássico aplicado (demo)">Usar</button>
+      </article>
+      <article class="card tpl-card">
+        <div class="tpl-preview" style="background:var(--rose-soft)"><div class="a4"><div><div class="a4-name" style="font-size:15px">Maria Silva</div><div class="a4-role">Designer</div></div><div class="a4-line w60"></div><div><div class="a4-line w85"></div><div class="a4-line w60"></div></div></div></div>
+        <h3>Minimalista</h3>
+        <p>Só o essencial, muito respiro, tipografia em destaque.</p>
+        <button class="btn btn-primary" data-toast="Modelo minimalista aplicado (demo)">Usar</button>
+      </article>
+      <article class="card tpl-card">
+        <div class="tpl-preview" style="background:var(--teal-soft)"><div class="a4"><div><div class="a4-name" style="font-size:15px">Maria Silva</div><div class="a4-role">Designer</div></div><div class="a4-chips"><span class="a4-chip">Figma</span><span class="a4-chip c3">UX</span></div><div><div class="a4-line w85"></div><div class="a4-line w60"></div></div></div></div>
+        <h3>Moderno</h3>
+        <p>Cabeçalho com chips de habilidade, ideal para áreas criativas.</p>
+        <button class="btn btn-primary" data-toast="Modelo moderno aplicado (demo)">Usar</button>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============ TELA: VISUALIZADOR /view ============ -->
+  <section class="panel" id="panel-viewer">
+    <div class="viewer-wrap">
+      <h2>Visualizador de link compartilhado</h2>
+      <div class="card viewer-card">
+        <span class="badge badge-del">estado de erro</span>
+        <h3>Link inválido</h3>
+        <p style="color:var(--muted)">Este link não contém um currículo válido. Peça um novo link a quem compartilhou.</p>
+        <a class="btn btn-ghost btn-sm" href="#inicio" data-goto="inicio">Ir para o início</a>
+      </div>
+      <div class="viewer-a4">
+        <div class="a4">
+          <div>
+            <div class="a4-name" style="font-size:22px">Maria Silva</div>
+            <div class="a4-role">Designer de produto</div>
+          </div>
+          <div class="a4-line w60"></div>
+          <div>
+            <p style="font-weight:700;margin-bottom:4px">Experiência</p>
+            <div class="a4-line w85"></div><div class="a4-line w75"></div><div class="a4-line w85"></div><div class="a4-line w60"></div>
+            <p style="font-weight:700;margin:10px 0 4px">Educação</p>
+            <div class="a4-line w75"></div>
+            <div class="a4-chips" style="margin-top:10px"><span class="a4-chip">Figma</span><span class="a4-chip c2">Pesquisa</span><span class="a4-chip c3">Protótipos</span></div>
+          </div>
+        </div>
+        <p style="text-align:center;color:var(--meta);font-size:var(--text-sm);margin-top:var(--s-3)">Criado com HireWerk · ao imprimir esta tela, sai apenas a página A4</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="container">HireWerk · protótipo do design system · dados fictícios de demonstração</div>
+</footer>
+
+<nav class="bottom-nav" aria-label="Navegação principal (mobile)">
+  <button data-goto="inicio" aria-selected="true"><span class="bn-ico" aria-hidden="true">H</span>Início</button>
+  <button data-goto="dashboard" aria-selected="false"><span class="bn-ico" aria-hidden="true">D</span>Painel</button>
+  <button data-goto="resumes" aria-selected="false"><span class="bn-ico" aria-hidden="true">C</span>Currículos</button>
+  <button data-goto="modelos" aria-selected="false"><span class="bn-ico" aria-hidden="true">M</span>Modelos</button>
+  <button data-goto="lixeira" aria-selected="false"><span class="bn-ico" aria-hidden="true">L</span>Lixeira</button>
+</nav>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="dlg">
+  <div class="dlg-body">
+    <h3 style="font-size:var(--text-xl)">Excluir currículo?</h3>
+    <p style="color:var(--muted)">"Currículo antigo 2023" será apagado junto com o histórico de versões. Isto não pode ser desfeito.</p>
+    <div class="dlg-actions">
+      <button class="btn btn-ghost" data-close>Cancelar</button>
+      <button class="btn btn-danger" data-close data-toast="Currículo excluído permanentemente (demo)">Excluir</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlgDelete">
+  <div class="dlg-body">
+    <h3 style="font-size:var(--text-xl)">Excluir de vez?</h3>
+    <p style="color:var(--muted)">"Currículo antigo 2023" sai da lixeira e desaparece para sempre, incluindo versões salvas.</p>
+    <div class="dlg-actions">
+      <button class="btn btn-ghost" data-close>Cancelar</button>
+      <button class="btn btn-danger" data-close data-toast="Excluído de vez (demo)">Excluir</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlgEmpty">
+  <div class="dlg-body">
+    <h3 style="font-size:var(--text-xl)">Esvaziar a lixeira?</h3>
+    <p style="color:var(--muted)">1 currículo será apagado permanentemente, junto com todo o histórico de versões.</p>
+    <div class="dlg-actions">
+      <button class="btn btn-ghost" data-close>Cancelar</button>
+      <button class="btn btn-danger" data-close data-toast="Lixeira esvaziada (demo)">Esvaziar</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlgNew">
+  <div class="dlg-body">
+    <h3 style="font-size:var(--text-xl)">Novo currículo</h3>
+    <p style="color:var(--muted)">No app real, este botão cria o currículo e abre o editor, já com um visual escolhido.</p>
+    <div class="dlg-actions">
+      <button class="btn btn-ghost" data-close>Fechar</button>
+      <button class="btn btn-primary" data-close data-goto="editor">Ir ao editor (demo)</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---- Navegação por abas entre telas ---- */
+  var tabs = document.querySelectorAll("[data-goto]");
+  function goto(name) {
+    document.querySelectorAll(".panel").forEach(function (p) { p.classList.remove("active"); });
+    var panel = document.getElementById("panel-" + name);
+    if (panel) panel.classList.add("active");
+    document.querySelectorAll(".screen-tabs button, .bottom-nav button").forEach(function (b) {
+      b.setAttribute("aria-selected", String(b.dataset.goto === name));
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  tabs.forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      if (el.tagName === "A") e.preventDefault();
+      goto(el.dataset.goto);
+    });
+  });
+
+  /* ---- Tema claro/escuro, persistido como no app ---- */
+  var themeBtn = document.getElementById("themeToggle");
+  var themeLbl = document.getElementById("themeLbl");
+  var themeIco = document.getElementById("themeIco");
+  function syncTheme() {
+    var dark = document.documentElement.dataset.theme === "dark";
+    themeLbl.textContent = dark ? "Claro" : "Escuro";
+    themeIco.textContent = dark ? "☀" : "◐";
+  }
+  themeBtn.addEventListener("click", function () {
+    var next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("hirewerk-theme", next); } catch (e) {}
+    syncTheme();
+  });
+  syncTheme();
+
+  /* ---- Toast ---- */
+  var toast = document.getElementById("toast");
+  var toastTimer;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove("show"); }, 2600);
+  }
+  document.querySelectorAll("[data-toast]").forEach(function (b) {
+    b.addEventListener("click", function () { showToast(b.dataset.toast); });
+  });
+
+  /* ---- Diálogos (fecháveis com Esc nativamente) ---- */
+  document.querySelectorAll("[data-dialog]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var d = document.getElementById(b.dataset.dialog);
+      if (d) d.showModal();
+    });
+  });
+  document.querySelectorAll("[data-close]").forEach(function (b) {
+    b.addEventListener("click", function () { b.closest("dialog").close(); });
+  });
+  document.querySelectorAll("[data-close][data-toast]").forEach(function (b) {
+    b.addEventListener("click", function () { showToast(b.dataset.toast); });
+  });
+
+  /* ---- Seções colapsáveis do editor ---- */
+  document.querySelectorAll(".section-card .sec-head").forEach(function (h) {
+    h.addEventListener("click", function () {
+      var card = h.closest(".section-card");
+      var open = card.classList.toggle("collapsed");
+      h.setAttribute("aria-expanded", String(!open));
+    });
+  });
+
+  /* ---- Zoom do preview ---- */
+  var zoom = document.getElementById("zoom");
+  var zoomOut = document.getElementById("zoomOut");
+  var wrap = document.getElementById("a4Wrap");
+  zoom.addEventListener("input", function () {
+    zoomOut.textContent = zoom.value + "%";
+    wrap.style.transform = "scale(" + zoom.value / 100 + ")";
+  });
+
+  /* ---- Abas Editar/Visualizar no mobile ---- */
+  var tabEdit = document.getElementById("tabEdit");
+  var tabView = document.getElementById("tabView");
+  var editorCol = document.getElementById("editorCol");
+  var previewCol = document.getElementById("previewCol");
+  function setMobileTab(view) {
+    tabEdit.setAttribute("aria-pressed", String(view === "edit"));
+    tabView.setAttribute("aria-pressed", String(view === "view"));
+    editorCol.style.display = view === "edit" ? "" : "none";
+    previewCol.style.display = view === "view" ? "" : "none";
+  }
+  tabEdit.addEventListener("click", function () { setMobileTab("edit"); });
+  tabView.addEventListener("click", function () { setMobileTab("view"); });
+  var mq = window.matchMedia("(max-width: 1020px)");
+  function applyMq() { if (!mq.matches) setMobileTab("edit"); }
+  mq.addEventListener("change", applyMq);
+
+  /* ---- Hero 3D: tilt da folha seguindo o cursor (preview do editor) ---- */
+  var stage = document.getElementById("stage3d");
+  var sheet = document.getElementById("a4-3d");
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (stage && sheet && !reduced) {
+    stage.addEventListener("mousemove", function (e) {
+      var r = stage.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width - 0.5;
+      var y = (e.clientY - r.top) / r.height - 0.5;
+      sheet.style.transform = "rotateY(" + (x * 26) + "deg) rotateX(" + (-y * 18) + "deg)";
+    });
+    stage.addEventListener("mouseleave", function () {
+      sheet.style.transform = "rotateY(0) rotateX(0)";
+    });
+  }
+})();
+</script>
+</body>
+</html>
