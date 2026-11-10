@@ -1,1 +1,4 @@
-/*    /200.html   200
+# SPA fallback do HireWerk (Cloudflare Pages)
+# Regras self-referentes (/index.html → /index.html) viram redirects 308 no Pages,
+# então mantemos apenas a catch-all: assets reais têm precedência sobre ela.
+/*    /index.html    200

@@ -33,7 +33,7 @@ export const LS_KEYS = {
 } as const;
 
 /** F10: base URL da API (Worker). Configure ao fazer deploy. */
-export const API_BASE = "/api";
+export const API_BASE = "https://hirewerk-api.emilionascimento9.workers.dev/api";
 
 /** Versão atual do schema */
 export const SCHEMA_VERSION = "2.0.0";

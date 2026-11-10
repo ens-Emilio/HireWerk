@@ -7,8 +7,7 @@ compatibility_date = "2026-01-01"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "hirewerk-db"
-database_id = "SUBSTITUA_PELO_ID_DO_D1_CRIADO"
+database_id = "7b5312bf-bc36-42b2-b915-744057ac8b04"
 migrations_dir = "migrations"
 
 [vars]
