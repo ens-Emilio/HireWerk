@@ -24,7 +24,16 @@ export const LS_KEYS = {
 
     /** Configurações globais do app */
     settings: "hirewerk:settings",
+
+    /** F10: conta (opt-in) — credenciais locais do sync E2E */
+    account: "hirewerk:account",
+
+    /** F10: timestamp do último pull de sync */
+    syncSince: "hirewerk:sync-since",
 } as const;
+
+/** F10: base URL da API (Worker). Configure ao fazer deploy. */
+export const API_BASE = "/api";
 
 /** Versão atual do schema */
 export const SCHEMA_VERSION = "2.0.0";

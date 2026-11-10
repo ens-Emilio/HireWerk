@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useResumeStore } from '~/stores/resume'
+import { useSyncStore } from '~/stores/sync'
 import { ref, computed, onMounted } from 'vue'
 import { toast } from 'vue-sonner'
 import { exportTxt, exportDocx, sanitizeFilename, downloadFile } from '~/lib/export/formats'
@@ -20,7 +21,39 @@ import { Input } from '~/components/ui/input'
 import { Button } from '~/components/ui/button'
 
 const store = useResumeStore()
+const syncStore = useSyncStore()
+const syncPass = ref('')
+const syncRepeat = ref('')
+const showSyncForm = ref(false)
 
+async function handleCreateAccount() {
+  if (syncPass.value !== syncRepeat.value) {
+    syncStore.error = 'As frases-senha não coincidem.'
+    return
+  }
+  const ok = await syncStore.createAccount(syncPass.value)
+  if (ok) {
+    syncPass.value = ''
+    syncRepeat.value = ''
+    showSyncForm.value = false
+    toast.success('Conta criada — seus currículos foram sincronizados cifrados')
+  }
+}
+
+async function handleSyncNow() {
+  const ok = await syncStore.syncNow()
+  if (ok) toast.success('Sincronizado')
+  else toast.error(syncStore.error || 'Falha na sincronização')
+}
+
+function handleUnlock() {
+  if (!syncStore.unlock(syncPass.value)) {
+    syncStore.error = 'Use a frase-senha com pelo menos 8 caracteres.'
+    return
+  }
+  syncPass.value = ''
+  handleSyncNow()
+}
 /* ============ Animação 3D do hero (F6 #96) ============ */
 const disable3d = ref(false)
 const locale = ref<'pt-BR' | 'en-US'>('pt-BR')
@@ -183,6 +216,72 @@ function handleExportZip() {
         />
       </div>
       <p class="text-sm text-muted-foreground">{{ usageMB }} MB de ~5 MB disponíveis</p>
+    </Card>
+
+    <!-- Conta & Sync (F10.1) — 100% opt-in; offline continua pleno -->
+    <Card class="p-6 rounded-2xl space-y-3">
+      <h2 class="font-display text-lg font-bold text-foreground">Sincronizar entre aparelhos</h2>
+      <p class="text-sm text-muted-foreground">
+        Opcional. Seus currículos são cifrados no aparelho (AES-GCM, chave derivada da sua frase-senha)
+        e o servidor guarda apenas blobs que <strong>ele mesmo não consegue ler</strong>. Sem conta, tudo continua
+        funcionando offline como sempre.
+      </p>
+
+      <template v-if="!syncStore.hasAccount">
+        <Button variant="secondary" size="sm" @click="showSyncForm = !showSyncForm">
+          <Icon name="lucide:cloud-upload" class="w-4 h-4 mr-2" />
+          Criar conta de sincronização
+        </Button>
+        <form v-if="showSyncForm" class="space-y-2 max-w-sm" @submit.prevent="handleCreateAccount">
+          <Input v-model="syncPass" type="password" placeholder="Frase-senha (mín. 8 caracteres)" aria-label="Frase-senha de sincronização" />
+          <Input v-model="syncRepeat" type="password" placeholder="Repetir frase-senha" aria-label="Repetir frase-senha" />
+          <p v-if="syncStore.error" class="text-xs text-destructive" role="alert">{{ syncStore.error }}</p>
+          <Button type="submit" size="sm">Criar e sincronizar</Button>
+        </form>
+      </template>
+
+      <template v-else-if="!syncStore.unlocked">
+        <p class="text-xs text-muted-foreground">Conta ativa. Digite a frase-senha para destravar o sync nesta sessão (fica só na memória).</p>
+        <form class="space-y-2 max-w-sm" @submit.prevent="handleUnlock">
+          <Input v-model="syncPass" type="password" placeholder="Sua frase-senha" aria-label="Frase-senha de sincronização" />
+          <Button type="submit" size="sm">
+            <Icon name="lucide:unlock" class="w-4 h-4 mr-2" />
+            Destravar e sincronizar
+          </Button>
+        </form>
+      </template>
+
+      <template v-else>
+        <div class="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" size="sm" :disabled="syncStore.syncing" @click="handleSyncNow">
+            <Icon name="lucide:refresh-cw" class="w-4 h-4 mr-2" :class="{ 'animate-spin': syncStore.syncing }" />
+            {{ syncStore.syncing ? 'Sincronizando…' : 'Sincronizar agora' }}
+          </Button>
+          <Button variant="ghost" size="sm" @click="syncStore.lock()">Travar sessão</Button>
+          <AlertDialog>
+            <AlertDialogTrigger as-child>
+              <Button variant="ghost" size="sm" class="text-destructive hover:bg-destructive-soft">Excluir conta</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir conta de sync?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Remove a conta e TODOS os blobs do servidor. Seus currículos locais continuam intactos no aparelho.
+                  Currículos em outros aparelhos não serão mais sincronizados.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction @click="syncStore.logout(); toast.success('Conta removida do servidor')">
+                  Excluir conta
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+        <p v-if="syncStore.lastSync" class="text-xs text-muted-foreground">Último sync: {{ new Date(syncStore.lastSync).toLocaleString('pt-BR') }}</p>
+        <p v-if="syncStore.error" class="text-xs text-destructive" role="alert">{{ syncStore.error }}</p>
+      </template>
     </Card>
 
     <!-- Nome de arquivo -->

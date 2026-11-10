@@ -1,0 +1,15 @@
+# F10 — HireWerk API Worker (Cloudflare Workers + D1)
+# Deploy: bunx wrangler deploy   (na pasta worker/)
+# D1: bunx wrangler d1 create hirewerk-db && bunx wrangler d1 migrations apply hirewerk-db
+name = "hirewerk-api"
+main = "index.ts"
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hirewerk-db"
+database_id = "SUBSTITUA_PELO_ID_DO_D1_CRIADO"
+migrations_dir = "migrations"
+
+[vars]
+# nada sensível em vars — o design E2E não exige segredos no servidor
