@@ -21,7 +21,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # 22: pdfjs-dist@6 e puppeteer-core@25 exigem >=22; node 20 quebra
+          # o vue-tsc 3 (ERR_PACKAGE_PATH_NOT_EXPORTED → erros TS fantasma)
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: apps/nuxt-web/package.json
 
