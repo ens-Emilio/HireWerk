@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useTheme } from '~/composables/useTheme'
+import { useI18n } from '~/composables/useI18n'
 import { Button } from '~/components/ui/button'
 import { Separator } from '~/components/ui/separator'
 
 const isMobileMenuOpen = ref(false)
 const { theme, toggleTheme } = useTheme()
+const { t } = useI18n()
 
 function toggleMobileMenu() {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
@@ -18,7 +20,7 @@ function toggleMobileMenu() {
       href="#main-content"
       class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[200] focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded-md focus:font-bold focus:text-sm"
     >
-      Pular para o conteúdo
+      {{ t('nav.skip') }}
     </a>
     <header class="app-header sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
       <div class="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -29,11 +31,11 @@ function toggleMobileMenu() {
         </NuxtLink>
 
         <nav class="hidden md:flex items-center gap-1" aria-label="Navegação principal">
-          <NuxtLink to="/dashboard" class="px-3.5 py-2 rounded-md text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface min-h-11 flex items-center transition-colors active-link">Dashboard</NuxtLink>
-          <NuxtLink to="/resumes" class="px-3.5 py-2 rounded-md text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface min-h-11 flex items-center transition-colors active-link">Currículos</NuxtLink>
-          <NuxtLink to="/templates" class="px-3.5 py-2 rounded-md text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface min-h-11 flex items-center transition-colors active-link">Modelos</NuxtLink>
-          <NuxtLink to="/settings" class="px-3.5 py-2 rounded-md text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface min-h-11 flex items-center transition-colors">Config.</NuxtLink>
-          <NuxtLink to="/resumes/trash" class="px-3.5 py-2 rounded-md text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface min-h-11 flex items-center transition-colors">Lixeira</NuxtLink>
+          <NuxtLink to="/dashboard" class="px-3.5 py-2 rounded-md text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface min-h-11 flex items-center transition-colors active-link">{{ t('nav.dashboard') }}</NuxtLink>
+          <NuxtLink to="/resumes" class="px-3.5 py-2 rounded-md text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface min-h-11 flex items-center transition-colors active-link">{{ t('nav.resumes') }}</NuxtLink>
+          <NuxtLink to="/templates" class="px-3.5 py-2 rounded-md text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface min-h-11 flex items-center transition-colors active-link">{{ t('nav.templates') }}</NuxtLink>
+          <NuxtLink to="/settings" class="px-3.5 py-2 rounded-md text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface min-h-11 flex items-center transition-colors">{{ t('nav.settings') }}</NuxtLink>
+          <NuxtLink to="/resumes/trash" class="px-3.5 py-2 rounded-md text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface min-h-11 flex items-center transition-colors">{{ t('nav.trash') }}</NuxtLink>
         </nav>
 
         <div class="flex items-center gap-3">
@@ -72,7 +74,7 @@ function toggleMobileMenu() {
             class="px-4 py-3 rounded-lg text-sm font-semibold hover:bg-surface transition-colors active-link flex items-center gap-2 min-h-11"
           >
             <Icon name="lucide:layout-dashboard" class="w-4 h-4" />
-            Painel
+            {{ t('nav.dashboard') }}
           </NuxtLink>
           <NuxtLink
             to="/resumes"
@@ -80,7 +82,7 @@ function toggleMobileMenu() {
             class="px-4 py-3 rounded-lg text-sm font-semibold hover:bg-surface transition-colors active-link flex items-center gap-2 min-h-11"
           >
             <Icon name="lucide:file-text" class="w-4 h-4" />
-            Currículos
+            {{ t('nav.resumes') }}
           </NuxtLink>
           <NuxtLink
             to="/templates"
@@ -88,7 +90,7 @@ function toggleMobileMenu() {
             class="px-4 py-3 rounded-lg text-sm font-semibold hover:bg-surface transition-colors active-link flex items-center gap-2 min-h-11"
           >
             <Icon name="lucide:palette" class="w-4 h-4" />
-            Modelos
+            {{ t('nav.templates') }}
           </NuxtLink>
           <Separator />
 
@@ -98,7 +100,7 @@ function toggleMobileMenu() {
             @click="toggleTheme"
           >
             <Icon :name="theme === 'dark' ? 'lucide:sun' : 'lucide:moon'" class="w-4 h-4" />
-            {{ theme === 'dark' ? 'Tema Claro' : 'Tema Escuro' }}
+            {{ theme === 'dark' ? t('settings.light') : t('settings.dark') }}
           </Button>
 
           <NuxtLink
@@ -107,7 +109,7 @@ function toggleMobileMenu() {
             class="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface transition-colors flex items-center gap-2 min-h-11"
           >
             <Icon name="lucide:trash-2" class="w-4 h-4" />
-            Lixeira
+            {{ t('nav.trash') }}
           </NuxtLink>
           <NuxtLink
             to="/settings"
@@ -115,7 +117,7 @@ function toggleMobileMenu() {
             class="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface transition-colors flex items-center gap-2 min-h-11"
           >
             <Icon name="lucide:settings" class="w-4 h-4" />
-            Configurações
+            {{ t('nav.settings') }}
           </NuxtLink>
           <NuxtLink
             to="/about"
@@ -123,7 +125,7 @@ function toggleMobileMenu() {
             class="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface transition-colors flex items-center gap-2 min-h-11"
           >
             <Icon name="lucide:info" class="w-4 h-4" />
-            Sobre
+            {{ t('nav.about') }}
           </NuxtLink>
         </nav>
       </div>

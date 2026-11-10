@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useResumeStore } from '~/stores/resume'
+import { useI18n } from '~/composables/useI18n'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { Button } from '~/components/ui/button'
@@ -17,6 +18,7 @@ import {
 } from '~/components/ui/alert-dialog'
 
 const store = useResumeStore()
+const { t } = useI18n()
 
 const deletedResumes = computed(() =>
   store.index.filter(r => r.deletedAt !== null)
@@ -95,7 +97,7 @@ async function executeEmptyTrash() {
     <template v-else>
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 class="font-display text-2xl font-bold tracking-tight text-foreground">Lixeira</h1>
+          <h1 class="font-display text-2xl font-bold tracking-tight text-foreground">{{ t('trash.title') }}</h1>
           <p class="text-sm text-muted-foreground mt-1">
             Nada desaparece de imediato: currículos aqui podem ser restaurados a qualquer momento.
           </p>

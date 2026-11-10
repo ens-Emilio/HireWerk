@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
-import { getLocale, setLocale, type Locale } from '~/lib/i18n'
+import { getLocale, setLocale, translate, type Locale } from '~/lib/i18n'
 
-/** Locale reativo (F6) */
+/** Locale reativo (F6). Dicionário central em ~/lib/i18n.ts */
 const current = ref<Locale>('pt-BR')
 
 if (typeof window !== 'undefined') {
@@ -9,23 +9,17 @@ if (typeof window !== 'undefined') {
 }
 
 export function useI18n() {
-  function t(key: string): string {
-    return messages.value[key] ?? key
+  const locale = computed(() => current.value)
+
+  /** t('key', {n: 3}) — interpola {param} do dicionário central */
+  function t(key: string, params?: Record<string, string | number>): string {
+    return translate(current.value, key, params)
   }
 
-  const messages = computed(() => {
-    // resolução tardia evita import cycle no bundle
-    const dicts = {
-      'pt-BR': { 'nav.dashboard': 'Dashboard', 'nav.resumes': 'Currículos', 'nav.templates': 'Modelos', 'nav.settings': 'Config.', 'nav.trash': 'Lixeira', 'nav.about': 'Sobre' },
-      'en-US': { 'nav.dashboard': 'Dashboard', 'nav.resumes': 'Résumés', 'nav.templates': 'Templates', 'nav.settings': 'Settings', 'nav.trash': 'Trash', 'nav.about': 'About' },
-    } as Record<Locale, Record<string, string>>
-    return dicts[current.value] ?? dicts['pt-BR']!
-  })
-
-  function switchTo(locale: Locale) {
-    current.value = locale
-    setLocale(locale)
+  function switchTo(next: Locale) {
+    current.value = next
+    setLocale(next)
   }
 
-  return { t, locale: current, switchTo }
+  return { t, locale, switchTo }
 }
