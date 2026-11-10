@@ -29,7 +29,7 @@ export function exportPng(resume: ResumeDoc, a4El?: HTMLElement | null): void {
     ctx.scale(scale, scale);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, width, canvas.height / scale);
-    ctx.fillStyle = "#17153a";
+    ctx.fillStyle = "#1e1e24";
     ctx.font = "13px 'Noto Sans', sans-serif";
     lines.forEach((line, i) => {
         ctx.fillText(line, 56, 64 + i * 18);

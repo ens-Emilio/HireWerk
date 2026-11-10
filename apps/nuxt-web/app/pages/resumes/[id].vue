@@ -286,14 +286,14 @@ const summaryWords = computed(() => (resume.value?.data.summary ?? '').trim().sp
 /** Paleta do painel de estilo: '' = accent do design system */
 const ACCENT_CHOICES: Record<string, string> = {
   '': '',
-  blue: '#4a5df9',
-  green: '#0e7a4a',
-  violet: '#7b5df9',
-  rose: '#e0447c',
-  orange: '#e07a2f',
-  teal: '#0e7a72',
-  red: '#c22f2f',
-  ink: '#17153a',
+  blue: '#2563eb',
+  green: '#16a34a',
+  violet: '#7c3aed',
+  rose: '#e11d48',
+  orange: '#ea580c',
+  teal: '#0d9488',
+  red: '#dc2626',
+  ink: '#1e1e24',
 }
 
 /* ============ Idiomas (aceita string legado ou objeto) ============ */
@@ -1397,7 +1397,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                     :key="key"
                     class="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
                     :class="resume.style.accentColor === key ? 'border-foreground scale-110' : 'border-transparent'"
-                    :style="{ background: hex || 'linear-gradient(135deg,#ffd02f,#fff)' }"
+                    :style="{ background: hex || '#ea580c' }"
                     :aria-label="`Cor ${key || 'padrão'}`"
                     @click="resume.style.accentColor = key; handleUpdate()"
                   />

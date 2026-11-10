@@ -21,7 +21,7 @@ const links = computed(() => (props.data.links ?? []).filter(l => l.url))
 <template>
   <div class="flex min-h-full text-foreground">
     <!-- Sidebar colorida -->
-    <aside class="w-[35%] bg-[#17153a] text-white p-4 space-y-4 shrink-0">
+    <aside class="w-[35%] bg-[#1e1e24] text-white p-4 space-y-4 shrink-0">
       <div>
         <div class="font-bold text-base leading-tight">{{ name }}</div>
         <div class="text-[10px] uppercase tracking-widest text-white/60 mt-0.5">{{ headline }}</div>
@@ -35,7 +35,7 @@ const links = computed(() => (props.data.links ?? []).filter(l => l.url))
       <div v-if="skills.length" class="space-y-1.5">
         <div class="text-[10px] font-bold uppercase tracking-widest text-white/50">Skills</div>
         <div class="flex flex-wrap gap-1">
-          <span v-for="(s, i) in skills" :key="i" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#ffd02f] text-[#17153a]">{{ s }}</span>
+          <span v-for="(s, i) in skills" :key="i" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#ea580c] text-[#1e1e24]">{{ s }}</span>
         </div>
       </div>
 
@@ -55,7 +55,7 @@ const links = computed(() => (props.data.links ?? []).filter(l => l.url))
       <div class="text-[13px] leading-relaxed whitespace-pre-wrap">{{ summary }}</div>
 
       <div v-if="experiences.length">
-        <div class="text-xs font-bold uppercase tracking-widest text-[#4a5df9]">Experiência</div>
+        <div class="text-xs font-bold uppercase tracking-widest text-[#c2410c]">Experiência</div>
         <div class="mt-2 space-y-3">
           <div v-for="(exp, i) in experiences" :key="i">
             <div class="font-bold text-sm">{{ exp.role }}<span v-if="exp.company" class="font-normal text-muted-foreground"> · {{ exp.company }}</span></div>
@@ -66,7 +66,7 @@ const links = computed(() => (props.data.links ?? []).filter(l => l.url))
       </div>
 
       <div v-if="projects.length">
-        <div class="text-xs font-bold uppercase tracking-widest text-[#4a5df9]">Projetos</div>
+        <div class="text-xs font-bold uppercase tracking-widest text-[#c2410c]">Projetos</div>
         <div class="mt-2 space-y-2">
           <div v-for="(p, i) in projects" :key="i">
             <div class="font-bold text-sm">{{ p.name }}</div>
@@ -77,7 +77,7 @@ const links = computed(() => (props.data.links ?? []).filter(l => l.url))
       </div>
 
       <div v-if="education.length">
-        <div class="text-xs font-bold uppercase tracking-widest text-[#4a5df9]">Formação</div>
+        <div class="text-xs font-bold uppercase tracking-widest text-[#c2410c]">Formação</div>
         <div class="mt-2 space-y-1 text-sm">
           <div v-for="(ed, i) in education" :key="i">
             {{ ed.course }}<span v-if="ed.institution" class="text-muted-foreground"> — {{ ed.institution }}</span>

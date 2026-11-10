@@ -57,15 +57,12 @@ export default {
                 },
                 success: 'hsl(var(--success))',
                 'success-soft': 'hsl(var(--success-soft))',
-                'rose-soft': '#ffe3f3',
-                'teal-soft': '#d8f6f2',
-                'coral-soft': '#ffe1e1',
                 danger: 'hsl(var(--destructive))',
-                'accent-hover': '#f5c414',
+                'accent-hover': '#c2410c',
             },
             boxShadow: {
                 ring: '0 0 0 1px hsl(var(--border))',
-                raised: '0 18px 44px rgba(23, 21, 58, 0.14)',
+                raised: '0 18px 44px rgba(30, 30, 36, 0.14)',
             },
             borderRadius: {
                 sm: '0.5rem',

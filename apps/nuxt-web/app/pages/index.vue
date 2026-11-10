@@ -62,16 +62,16 @@ onBeforeUnmount(() => {
             <div class="a4-face">
               <div>
                 <div class="font-display font-bold text-lg md:text-xl">Maria Silva</div>
-                <div class="text-[11px] text-[#6b67a0] uppercase tracking-widest mt-0.5">Designer de produto</div>
+                <div class="text-[11px] text-[#6b6a78] uppercase tracking-widest mt-0.5">Designer de produto</div>
               </div>
               <div>
                 <div class="a4-line w-[85%]"></div>
                 <div class="a4-line w-[60%]"></div>
                 <div class="a4-line w-[75%]"></div>
                 <div class="flex gap-1.5 flex-wrap mt-2.5">
-                  <span class="a4-chip" style="background:#fff7d6">Figma</span>
-                  <span class="a4-chip bg-[#ffe3f3]">Pesquisa</span>
-                  <span class="a4-chip bg-[#d8f6f2]">Protótipos</span>
+                  <span class="a4-chip" style="background:#FFF1EB">Figma</span>
+                  <span class="a4-chip bg-[#DCFCE7]">Pesquisa</span>
+                  <span class="a4-chip bg-[#F4F4F6]">Protótipos</span>
                 </div>
               </div>
             </div>
@@ -125,19 +125,19 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   background: #fff;
-  color: #17153a;
+  color: #1e1e24;
   border-radius: 6px;
-  box-shadow: 0 18px 44px rgba(23, 21, 58, 0.18);
+  box-shadow: 0 18px 44px rgba(30, 30, 36, 0.18);
   padding: 8%;
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 6%;
 }
-.dark .a4-face { background: #fdfcff; }
+.dark .a4-face { background: #1b1b22; color: #FAFAFA; }
 .a4-line {
   height: 6px;
   border-radius: 3px;
-  background: #e9e7f6;
+  background: #E4E4E8;
   margin-top: 7px;
 }
 .a4-chip {
@@ -145,6 +145,6 @@ onBeforeUnmount(() => {
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 99px;
-  color: #17153a;
+  color: #1e1e24;
 }
 </style>

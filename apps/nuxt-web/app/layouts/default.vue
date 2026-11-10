@@ -178,9 +178,12 @@ function toggleMobileMenu() {
 
 <style scoped>
 .router-link-active.active-link {
-  /* amarelo puro não passa contraste AA sobre claro — usa tom escurecido p/ texto,
-     mantém o amarelo como marca só em elementos decorativos */
-  color: hsl(44 90% 25%);
+  /* laranja puro não passa AA como texto pequeno no claro — escurece no light,
+     clareia no dark (laranja do dark primary, 6.67) */
+  color: hsl(21 90% 34%);
   background-color: hsl(var(--primary) / 0.12);
+}
+.dark .router-link-active.active-link {
+  color: hsl(25 95% 60%);
 }
 </style>

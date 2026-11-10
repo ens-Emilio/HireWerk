@@ -54,7 +54,7 @@ export default defineNuxtConfig({
       name: 'HireWerk',
       short_name: 'HireWerk',
       description: 'Crie currículos profissionais',
-      theme_color: '#ffd02f',
+      theme_color: '#EA580C',
       display: 'standalone',
       orientation: 'portrait',
       // Atalhos de ícone pressionado (F8 #85)

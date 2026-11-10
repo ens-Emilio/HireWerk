@@ -153,7 +153,7 @@ async function handleTemplateFile(e: Event) {
       >
         <div
           class="h-[311px] w-full rounded-md overflow-hidden border border-border-soft grid place-items-center"
-          :class="tpl.id === 'minimal' ? 'bg-rose-soft' : tpl.id === 'modern' ? 'bg-teal-soft' : 'bg-surface'"
+          :class="tpl.id === 'minimal' ? 'bg-success-soft' : tpl.id === 'modern' ? 'bg-muted' : 'bg-surface'"
         >
           <A4Paper class="origin-top scale-[0.62] pointer-events-none">
             <component :is="loadedComponents[tpl.id]" :data="sample" />

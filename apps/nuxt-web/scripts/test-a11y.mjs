@@ -64,27 +64,34 @@ async function main() {
   const browser = await puppeteer.launch({ headless: true, executablePath, args: ['--no-sandbox', '--disable-gpu'] })
   let failures = 0
 
-  for (const route of ROUTES) {
-    const page = await browser.newPage()
-    try {
-      await page.goto(`http://127.0.0.1:${PORT}${route}`, { waitUntil: 'networkidle2', timeout: 30000 })
-      await page.evaluate(axeSource)
-      const results = await page.evaluate(() =>
-        /** @type {any} */ (window).axe.run()
-      )
-      const serious = results.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')
-      if (serious.length) {
-        failures += serious.length
-        console.error(`✗ ${route}: ${serious.length} violação(ões) séria(s)`)
-        for (const v of serious) console.error(`   [${v.impact}] ${v.id} — ${v.nodes.length} nó(s)`)
-      } else {
-        console.log(`✓ ${route}`)
+  // audita light e dark: a paleta muda pares de contraste entre temas
+  for (const theme of ['light', 'dark']) {
+    for (const route of ROUTES) {
+      const page = await browser.newPage()
+      try {
+        await page.evaluateOnNewDocument((t) => {
+          localStorage.setItem('hirewerk-theme', t)
+          document.documentElement.classList.toggle('dark', t === 'dark')
+        }, theme)
+        await page.goto(`http://127.0.0.1:${PORT}${route}`, { waitUntil: 'networkidle2', timeout: 30000 })
+        await page.evaluate(axeSource)
+        const results = await page.evaluate(() =>
+          /** @type {any} */ (window).axe.run()
+        )
+        const serious = results.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')
+        if (serious.length) {
+          failures += serious.length
+          console.error(`✗ [${theme}] ${route}: ${serious.length} violação(ões) séria(s)`)
+          for (const v of serious) console.error(`   [${v.impact}] ${v.id} — ${v.nodes.length} nó(s)`)
+        } else {
+          console.log(`✓ [${theme}] ${route}`)
+        }
+      } catch (err) {
+        console.error(`✗ [${theme}] ${route}: erro — ${err.message.slice(0, 120)}`)
+        failures++
       }
-    } catch (err) {
-      console.error(`✗ ${route}: erro — ${err.message.slice(0, 120)}`)
-      failures++
+      await page.close()
     }
-    await page.close()
   }
 
   await browser.close()
