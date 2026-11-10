@@ -1,9 +1,0 @@
-# Cloudflare Pages — HireWerk (SPA 100% client-side)
-# Build: `bun run generate` (ou `npm run generate`) → saída em .output/public
-#
-# Deploy local:  bunx wrangler pages deploy
-# Deploy via Git: conecte o repo em dash.cloudflare.com (Pages),
-#   build command: bun run generate · output: .output/public
-name = "hirewerk"
-compatibility_date = "2026-01-01"
-pages_build_output_dir = ".output/public"
