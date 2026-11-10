@@ -16,15 +16,21 @@ export const LS_KEYS = {
     /** Snapshots de versões de um currículo (limitado a 30) */
     resumeVersions: (id: string) => `hirewerk:resume:${id}:versions`,
 
-    /** Log de exportações (PDF e JSON) */
-    exports: "hirewerk:exports",
+    /** Pilha de redo de um currículo (persistida para sobreviver a refresh) */
+    resumeFuture: (id: string) => `hirewerk:resume:${id}:future`,
 
     /** Templates disponíveis */
     templates: "hirewerk:templates",
+
+    /** Configurações globais do app */
+    settings: "hirewerk:settings",
 } as const;
 
 /** Versão atual do schema */
-export const SCHEMA_VERSION = "1.0.0";
+export const SCHEMA_VERSION = "2.0.0";
+
+/** Versão anterior (para migração) */
+export const SCHEMA_VERSION_V1 = "1.0.0";
 
 /** Limite de snapshots por currículo */
 export const MAX_SNAPSHOTS_PER_RESUME = 30;

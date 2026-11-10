@@ -1,86 +1,83 @@
 /**
  * Sistema de migração de schema para localStorage
- * Permite atualizar a estrutura de dados sem perder informações
+ * v1.0.0 → v2.0.0: docs ganham estilo/tags/pinned/jobTitle; snapshots ganham label/note;
+ * novos arrays de seções com defaults; settings key criada.
  */
 
-import { LS_KEYS, SCHEMA_VERSION } from "./keys";
-import { readJson, writeJson } from "./storage";
-import type { StorageMeta } from "./schema";
+import { LS_KEYS, SCHEMA_VERSION, SCHEMA_VERSION_V1 } from "./keys";
+import { readJson, writeJson, removeKey } from "./storage";
+import { ResumeIndexSchema, ResumeDocSchema, SettingsSchema, type StorageMeta, type ResumeIndex, type ResumeDoc } from "./schema";
 
-/**
- * Tipo para função de migração
- */
 type MigrationFn = () => void;
 
-/**
- * Registro de migrações por versão
- * Adicione novas migrações aqui conforme o schema evolui
- */
-const MIGRATIONS: Record<string, MigrationFn> = {
-    // Exemplo de migração futura:
-    // "1.1.0": migrateToV1_1_0,
-};
+/** Migração v1 → v2: normaliza docs, índice e snapshots para o schema v2 */
+function migrateV1toV2(): void {
+    // 1. Re-normalizar cada doc via Zod (defaults preenchem campos novos)
+    const rawIndex = readJson<ResumeIndex>(LS_KEYS.resumesIndex) ?? [];
+    const index = ResumeIndexSchema.catch([]).parse(rawIndex);
 
-/**
- * Executa migrações pendentes
- */
-export function runMigrations(): void {
-    const meta = readJson<StorageMeta>(LS_KEYS.meta);
-
-    if (!meta) {
-        console.log("[Migrations] Nenhuma migração necessária (primeira execução)");
-        return;
-    }
-
-    const currentVersion = meta.version;
-
-    if (currentVersion === SCHEMA_VERSION) {
-        console.log("[Migrations] Schema já está na versão mais recente");
-        return;
-    }
-
-    console.log(`[Migrations] Migrando de ${currentVersion} para ${SCHEMA_VERSION}...`);
-
-    // Executar migrações em ordem
-    const versions = Object.keys(MIGRATIONS).sort();
-
-    for (const version of versions) {
-        if (version > currentVersion && version <= SCHEMA_VERSION) {
-            console.log(`[Migrations] Executando migração para ${version}...`);
-            const migrationFn = MIGRATIONS[version];
-            if (migrationFn) {
-                migrationFn();
-            }
+    for (const item of index) {
+        const rawDoc = readJson<unknown>(LS_KEYS.resume(item.id));
+        const doc = ResumeDocSchema.safeParse(rawDoc).data ?? null;
+        if (doc) {
+            writeJson(LS_KEYS.resume(item.id), doc);
         }
     }
 
-    // Atualizar versão
+    // 2. Snapshots: label/note têm default null — Zod .catch normaliza na leitura;
+    //    reescrever para persistir o formato novo.
+    for (const item of index) {
+        const key = LS_KEYS.resumeVersions(item.id);
+        const raw = readJson<unknown[]>(key);
+        if (!Array.isArray(raw)) continue;
+        const normalized = raw.map(s => {
+            if (!s || typeof s !== "object") return s;
+            const o = s as Record<string, unknown>;
+            return {
+                version: typeof o.version === "number" ? o.version : 1,
+                data: o.data ?? {},
+                createdAt: typeof o.createdAt === "string" ? o.createdAt : new Date().toISOString(),
+                label: null,
+                note: null,
+            };
+        });
+        writeJson(key, normalized);
+        // Pilha de redo v1 não tem mais formato próprio — invalidar com segurança
+        removeKey(LS_KEYS.resumeFuture(item.id));
+    }
+
+    // 3. Índice re-normalizado de volta
+    writeJson(LS_KEYS.resumesIndex, index);
+
+    // 4. Settings defaults
+    writeJson(LS_KEYS.settings, SettingsSchema.parse({}));
+}
+
+const MIGRATIONS: Record<string, MigrationFn> = {
+    // "1.1.0": migrateToV1_1_0,
+    "2.0.0": migrateV1toV2,
+};
+
+export function runMigrations(): void {
+    const meta = readJson<StorageMeta>(LS_KEYS.meta);
+    if (!meta) return; // primeira execução: seed já cria v2
+
+    if (meta.version === SCHEMA_VERSION) return;
+
+    const versions = Object.keys(MIGRATIONS).sort();
+    for (const version of versions) {
+        if (version > meta.version && version <= SCHEMA_VERSION) {
+            MIGRATIONS[version]?.();
+        }
+    }
+
     const updatedMeta: StorageMeta = {
         ...meta,
         version: SCHEMA_VERSION,
         lastMigration: new Date().toISOString(),
     };
     writeJson(LS_KEYS.meta, updatedMeta);
-
-    console.log("[Migrations] Migrações concluídas!");
 }
 
-/**
- * Exemplo de função de migração (comentado)
- */
-/*
-function migrateToV1_1_0(): void {
-  // Exemplo: adicionar campo novo a todos os currículos
-  const index = readJson<ResumeIndex>(LS_KEYS.resumesIndex);
-  if (!index) return;
-
-  index.forEach(item => {
-    const resume = readJson<ResumeDoc>(LS_KEYS.resume(item.id));
-    if (resume) {
-      // Adicionar novo campo
-      const updated = { ...resume, newField: "defaultValue" };
-      writeJson(LS_KEYS.resume(item.id), updated);
-    }
-  });
-}
-*/
+// Export para testes
+export { SCHEMA_VERSION_V1 };
