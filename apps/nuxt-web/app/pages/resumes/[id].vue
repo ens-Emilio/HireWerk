@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useResumeStore } from '~/stores/resume'
+import { useI18n } from '~/composables/useI18n'
 import { useRoute, useRouter } from 'vue-router'
 import { ref, computed, watch, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import { createError } from '#app'
@@ -29,6 +30,7 @@ const CreativeTemplate = defineAsyncComponent(() => import('~/components/templat
 const route = useRoute()
 const router = useRouter()
 const store = useResumeStore()
+const { t } = useI18n()
 const id = route.params.id as string
 
 const resume = ref(store.getResume(id))
@@ -112,8 +114,8 @@ function handleUndo() {
   store.undo(id)
   resume.value = store.getResume(id)
   markSaved()
-  toast.success('Desfeito', {
-    description: 'Alterações revertidas para versão anterior.'
+  toast.success(t('editor.undoDone'), {
+    description: t('editor.undoDoneDesc')
   })
 }
 
@@ -122,8 +124,8 @@ function handleRedo() {
   store.redo(id)
   resume.value = store.getResume(id)
   markSaved()
-  toast.success('Refeito', {
-    description: 'Alterações refeitas.'
+  toast.success(t('editor.redoDone'), {
+    description: t('editor.redoDoneDesc')
   })
 }
 
@@ -213,7 +215,7 @@ function handleKeydown(e: KeyboardEvent) {
       cancelPendingSave()
       store.updateResume(resume.value)
       markSaved()
-      toast.success('Salvo!')
+      toast.success(t('editor.saved'))
     }
   }
   if (isCtrlOrCmd && e.key === 'z' && !e.shiftKey) {
@@ -230,7 +232,7 @@ function handleKeydown(e: KeyboardEvent) {
 function handleSaveCopy() {
   if (!resume.value) return
   store.exportJson(id)
-  toast.success('Cópia de segurança salva')
+  toast.success(t('editor.savedCopy'))
 }
 
 const showShareModal = ref(false)
@@ -733,7 +735,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
             Salvo{{ savedAt ? ` às ${savedAt}` : '' }}
           </Badge>
           <Badge variant="sample" class="tabular-nums cursor-help" :title="completenessTitle">
-            {{ completenessPct }}% completo
+            {{ completenessPct }}% {{ t('state.complete') }}
           </Badge>
         </div>
       </div>
@@ -774,39 +776,39 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
           class="shadow-lg shadow-primary/20 hover:scale-105 active:scale-95"
         >
           <Icon name="lucide:download" class="w-4 h-4 mr-2" />
-          Baixar PDF
+          {{ t('editor.pdf') }}
         </Button>
         <Button variant="ghost" @click="handleSaveCopy">
           <Icon name="lucide:save" class="w-4 h-4 mr-2" />
-          Salvar cópia
+          {{ t('editor.copy') }}
         </Button>
         <Button variant="ghost" @click="handleShare">
           <Icon name="lucide:share-2" class="w-4 h-4 mr-2" />
-          Compartilhar
+          {{ t('share.title') }}
         </Button>
         <Button variant="ghost" @click="showAts = !showAts">
           <Icon name="lucide:target" class="w-4 h-4 mr-2" />
-          Match vaga
+          {{ t('editor.matchJob') }}
         </Button>
         <Button variant="ghost" @click="showVersions = !showVersions">
           <Icon name="lucide:history" class="w-4 h-4 mr-2" />
-          Versões
+          {{ t('editor.versions') }}
         </Button>
         <Button variant="ghost" @click="showFindReplace = !showFindReplace" title="Buscar e substituir em todo o currículo">
           <Icon name="lucide:search" class="w-4 h-4 mr-2" />
-          Substituir
+          {{ t('action.replace') }}
         </Button>
         <Button variant="ghost" @click="duplicateForJob" title="Criar uma cópia para uma vaga específica">
           <Icon name="lucide:copy-plus" class="w-4 h-4 mr-2" />
-          P/ vaga
+          {{ t('editor.forJob') }}
         </Button>
         <Button variant="ghost" @click="pickImport('pdf')" title="Importar dados de um PDF ou do LinkedIn">
           <Icon name="lucide:file-up" class="w-4 h-4 mr-2" />
-          Importar
+          {{ t('editor.import') }}
         </Button>
         <Button variant="ghost" as-child>
           <NuxtLink :to="`/templates?id=${id}`">
-            Template
+            {{ t('editor.template') }}
           </NuxtLink>
         </Button>
       </div>
@@ -998,7 +1000,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                 <div class="flex items-center gap-3">
                   <Icon :name="section.icon" class="w-4 h-4 text-secondary" />
                   <h2 class="font-display text-base font-bold text-foreground">
-                    {{ section.label }}
+                    {{ t('section.' + section.key) }}
                   </h2>
                   <span
                     v-if="(sectionWordCounts[section.key] ?? 0) > 0"

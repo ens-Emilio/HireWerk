@@ -3,6 +3,7 @@ import { readJson } from '~/lib/storage/storage'
 import { LS_KEYS } from '~/lib/storage/keys'
 import { TemplateListSchema, type TemplateList } from '~/lib/storage/schema'
 import { useResumeStore } from '~/stores/resume'
+import { useI18n } from '~/composables/useI18n'
 import { ref, onMounted, computed, defineAsyncComponent, type Component } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -11,6 +12,7 @@ import { Card } from '~/components/ui/card'
 import A4Paper from '~/components/resume/A4Paper.vue'
 
 const store = useResumeStore()
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 
@@ -121,7 +123,7 @@ async function handleTemplateFile(e: Event) {
 <template>
   <div class="grid gap-9">
     <div>
-      <h1 class="font-display text-2xl font-bold text-foreground">Modelos</h1>
+      <h1 class="font-display text-2xl font-bold text-foreground">{{ t('templates.title') }}</h1>
       <p class="text-muted-foreground text-sm mt-1">Escolher a cara do seu currículo: clássico, minimalista ou moderno.</p>
     </div>
 

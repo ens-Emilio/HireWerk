@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useResumeStore } from '~/stores/resume'
 import { useSyncStore } from '~/stores/sync'
+import { useI18n } from '~/composables/useI18n'
 import { ref, computed, onMounted } from 'vue'
 import { toast } from 'vue-sonner'
 import { exportTxt, exportDocx, sanitizeFilename, downloadFile } from '~/lib/export/formats'
@@ -22,6 +23,7 @@ import { Button } from '~/components/ui/button'
 
 const store = useResumeStore()
 const syncStore = useSyncStore()
+const { t } = useI18n()
 const syncPass = ref('')
 const syncRepeat = ref('')
 const showSyncForm = ref(false)
@@ -56,13 +58,13 @@ function handleUnlock() {
 }
 /* ============ Animação 3D do hero (F6 #96) ============ */
 const disable3d = ref(false)
-const locale = ref<'pt-BR' | 'en-US'>('pt-BR')
+const { locale, switchTo } = useI18n()
 
 onMounted(() => {
   try {
     disable3d.value = localStorage.getItem('hirewerk-3d-off') === '1'
     const savedLocale = localStorage.getItem('hirewerk-locale')
-    if (savedLocale === 'pt-BR' || savedLocale === 'en-US') locale.value = savedLocale
+    if (savedLocale === 'pt-BR' || savedLocale === 'en-US') switchTo(savedLocale)
   } catch { /* storage bloqueado */ }
 })
 
@@ -72,8 +74,7 @@ function toggle3d() {
 }
 
 function setAppLocale(e: Event) {
-  locale.value = (e.target as HTMLSelectElement).value as 'pt-BR' | 'en-US'
-  try { localStorage.setItem('hirewerk-locale', locale.value) } catch { /* ignore */ }
+  switchTo((e.target as HTMLSelectElement).value as 'pt-BR' | 'en-US') // ref reativo + persistência
 }
 
 /* ============ Formato de arquivo configurável (F1 #40) ============ */
@@ -169,7 +170,7 @@ function handleExportZip() {
 <template>
   <div class="max-w-3xl mx-auto space-y-10">
     <div>
-      <h1 class="font-display text-3xl font-bold text-foreground">Configurações</h1>
+      <h1 class="font-display text-3xl font-bold text-foreground">{{ t('settings.title') }}</h1>
       <p class="text-muted-foreground mt-1 text-sm">Preferências do app, backups e espaço usado.</p>
     </div>
 
@@ -195,7 +196,7 @@ function handleExportZip() {
 
       <div class="flex items-center justify-between gap-4">
         <div>
-          <label class="text-sm font-semibold text-foreground">Animação 3D na página inicial</label>
+          <label class="text-sm font-semibold text-foreground">{{ t('settings.3d') }}</label>
           <p class="text-xs text-muted-foreground">A folha que inclina seguindo o cursor</p>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
@@ -207,7 +208,7 @@ function handleExportZip() {
 
     <!-- Uso de armazenamento -->
     <Card class="p-6 rounded-2xl space-y-3">
-      <h2 class="font-display text-lg font-bold text-foreground">Espaço usado</h2>
+      <h2 class="font-display text-lg font-bold text-foreground">{{ t('settings.storage') }}</h2>
       <div class="h-2 rounded-full bg-surface overflow-hidden">
         <div
           class="h-full rounded-full transition-all"
@@ -215,12 +216,12 @@ function handleExportZip() {
           :style="{ width: `${usagePct}%` }"
         />
       </div>
-      <p class="text-sm text-muted-foreground">{{ usageMB }} MB de ~5 MB disponíveis</p>
+      <p class="text-sm text-muted-foreground">{{ t('settings.storageOf', { used: usageMB }) }}</p>
     </Card>
 
     <!-- Conta & Sync (F10.1) — 100% opt-in; offline continua pleno -->
     <Card class="p-6 rounded-2xl space-y-3">
-      <h2 class="font-display text-lg font-bold text-foreground">Sincronizar entre aparelhos</h2>
+      <h2 class="font-display text-lg font-bold text-foreground">{{ t('settings.sync') }}</h2>
       <p class="text-sm text-muted-foreground">
         Opcional. Seus currículos são cifrados no aparelho (AES-GCM, chave derivada da sua frase-senha)
         e o servidor guarda apenas blobs que <strong>ele mesmo não consegue ler</strong>. Sem conta, tudo continua
@@ -286,21 +287,21 @@ function handleExportZip() {
 
     <!-- Nome de arquivo -->
     <Card class="p-6 rounded-2xl space-y-3">
-      <h2 class="font-display text-lg font-bold text-foreground">Nome dos arquivos exportados</h2>
+      <h2 class="font-display text-lg font-bold text-foreground">{{ t('settings.filename') }}</h2>
       <p class="text-sm text-muted-foreground">Variáveis: <code class="text-xs bg-surface px-1.5 py-0.5 rounded">{titulo}</code> <code class="text-xs bg-surface px-1.5 py-0.5 rounded">{data}</code></p>
       <Input v-model="filenamePattern" class="max-w-xs font-mono text-sm" aria-label="Padrão de nome dos arquivos exportados" />
     </Card>
 
     <!-- Export múltiplo -->
     <Card class="p-6 rounded-2xl space-y-3">
-      <h2 class="font-display text-lg font-bold text-foreground">Exportar tudo</h2>
+      <h2 class="font-display text-lg font-bold text-foreground">{{ t('settings.exportAll') }}</h2>
       <p class="text-sm text-muted-foreground">ZIP com JSON + TXT de cada currículo.</p>
-      <Button variant="outline" @click="handleExportZip">Baixar ZIP</Button>
+      <Button variant="outline" @click="handleExportZip">{{ t('settings.zip') }}</Button>
     </Card>
 
     <!-- Backup / restauração -->
     <Card class="p-6 rounded-2xl space-y-3">
-      <h2 class="font-display text-lg font-bold text-foreground">Backup completo</h2>
+      <h2 class="font-display text-lg font-bold text-foreground">{{ t('settings.backup') }}</h2>
       <p class="text-sm text-muted-foreground">Um arquivo com todos os currículos, versões e preferências. Use para migrar de aparelho.</p>
       <div class="flex flex-wrap gap-3">
         <Button @click="handleExportAll">Exportar backup</Button>
@@ -311,7 +312,7 @@ function handleExportZip() {
 
     <!-- Zona de perigo -->
     <Card class="p-6 rounded-2xl space-y-3 border-destructive-soft">
-      <h2 class="font-display text-lg font-bold text-destructive">Apagar tudo</h2>
+      <h2 class="font-display text-lg font-bold text-destructive">{{ t('settings.wipe') }}</h2>
       <p class="text-sm text-muted-foreground">Remove permanentemente todos os currículos, versões e preferências deste aparelho. Isto não pode ser desfeito.</p>
       <Button variant="destructive" @click="showWipe = true">Apagar todos os dados</Button>
     </Card>

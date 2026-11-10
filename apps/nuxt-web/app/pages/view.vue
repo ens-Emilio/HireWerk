@@ -2,11 +2,13 @@
 import { ref, computed } from 'vue'
 import { decodeShareLink, decodeProtectedLink } from '~/lib/export/share'
 import A4Paper from '~/components/resume/A4Paper.vue'
+import { useI18n } from '~/composables/useI18n'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import type { ResumeDoc } from '~/lib/storage/schema'
 
 const route = useRoute()
+const { t } = useI18n()
 
 /* ============ decode (protegido ou simples) ============ */
 const encoded = computed(() => route.query.r as string | null)
@@ -93,7 +95,7 @@ useHead({
       <div class="w-16 h-16 bg-surface rounded-2xl grid place-items-center text-foreground mb-1">
         <Icon name="lucide:lock" class="w-7 h-7" />
       </div>
-      <h2 class="font-display text-xl font-bold text-foreground">Currículo protegido</h2>
+      <h2 class="font-display text-xl font-bold text-foreground">{{ t('view.protected') }}</h2>
       <p class="text-sm text-muted-foreground">Quem compartilhou protegeu este currículo com uma senha.</p>
       <form class="w-full space-y-3" @submit.prevent="tryUnlock">
         <Input

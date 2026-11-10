@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useResumeStore } from '~/stores/resume'
+import { useI18n } from '~/composables/useI18n'
 import { useRouter } from 'vue-router'
 import { computed, ref, onMounted } from 'vue'
 import { toast } from 'vue-sonner'
@@ -10,6 +11,7 @@ import { Input } from '~/components/ui/input'
 import { Badge } from '~/components/ui/badge'
 
 const store = useResumeStore()
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 
@@ -143,8 +145,8 @@ function handleShare(id: string) {
     <template v-else>
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 class="font-display text-3xl font-bold tracking-tight text-foreground">Meus currículos</h1>
-          <p class="text-muted-foreground mt-1 text-sm">Gerencie e edite seus currículos salvos no seu aparelho.</p>
+          <h1 class="font-display text-3xl font-bold tracking-tight text-foreground">{{ t('list.title') }}</h1>
+          <p class="text-muted-foreground mt-1 text-sm">{{ t('list.subtitle') }}</p>
         </div>
         <Button
           @click="handleCreate"
@@ -160,7 +162,7 @@ function handleShare(id: string) {
         <div class="flex flex-wrap gap-3">
           <Input
             v-model="searchQuery"
-            placeholder="Buscar por título, vaga ou tag..."
+            :placeholder="t('list.search')"
             class="flex-1 min-w-[200px]"
             aria-label="Buscar currículos"
           />
