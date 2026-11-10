@@ -14,8 +14,8 @@
  * de registro; upgrade para passkey quando houver demanda de recuperação de conta.
  */
 
-import { LS_KEYS, API_BASE } from './keys'
-import { readJson, writeJson, removeKey } from './storage'
+import { LS_KEYS, API_BASE } from '../storage/keys'
+import { readJson, writeJson, removeKey } from '../storage/storage'
 
 export interface SyncAccount {
     accountId: string
@@ -72,7 +72,7 @@ export async function setupAccount(passphrase: string): Promise<SyncAccount | nu
             body: JSON.stringify({ passkeyId: token, publicKey: 'derived-from-passphrase' }),
         })
         if (!res.ok) return null
-        const data = await res.json<{ accountId?: string }>()
+        const data = (await res.json()) as { accountId?: string }
         const account: SyncAccount = { accountId: data.accountId ?? accountId, token, createdAt: new Date().toISOString() }
         writeJson(LS_KEYS.account, account)
         return account
@@ -143,7 +143,7 @@ export async function pullBlobs(since?: string): Promise<SyncBlob[] | null> {
             headers: { authorization: `Bearer ${account.token}` },
         })
         if (!res.ok) return null
-        const data = await res.json<{ blobs: SyncBlob[] }>()
+        const data = (await res.json()) as { blobs: SyncBlob[] }
         return data.blobs
     } catch {
         return null

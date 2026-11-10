@@ -40,10 +40,12 @@ const CHANGELOG = [
     </div>
 
     <Card class="p-6 rounded-2xl space-y-2">
-      <h2 class="font-display text-lg font-bold text-foreground">100% no seu aparelho</h2>
+      <h2 class="font-display text-lg font-bold text-foreground">No seu aparelho, por padrão</h2>
       <p class="text-sm text-muted-foreground leading-relaxed">
-        Não existe servidor. Seus currículos ficam guardados apenas no seu navegador — invisíveis para
-        qualquer outra pessoa, inclusive para nós. Funciona offline e não pede cadastro.
+        Seus currículos ficam guardados no seu navegador — invisíveis para qualquer outra pessoa, inclusive
+        para nós. Funciona offline e não exige cadastro. O sync entre aparelhos existe, mas é opcional e
+        criptografado de ponta a ponta: o servidor guarda blobs que nem ele consegue ler.
+        <NuxtLink to="/privacy" class="underline underline-offset-2">Detalhes na página de privacidade</NuxtLink>.
       </p>
     </Card>
 

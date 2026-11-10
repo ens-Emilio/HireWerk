@@ -39,13 +39,13 @@ onBeforeUnmount(() => {
       <div class="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center">
         <div>
           <p class="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground mb-3 before:content-[''] before:w-6 before:h-[3px] before:rounded before:bg-primary">
-            Grátis, sem cadastro, e seus dados ficam só com você
+            Grátis, sem cadastro obrigatório, e seus dados ficam só com você
           </p>
           <h1 class="font-display text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-tight">
             O currículo pronto em minutos, não em horas
           </h1>
           <p class="mt-4 text-lg text-muted-foreground max-w-[52ch] leading-relaxed">
-            Escreva, escolha o visual e compartilhe um link bonito. Tudo funciona no seu aparelho: nada é enviado para servidores, nada é vendido, nada desaparece.
+            Escreva, escolha o visual e compartilhe um link bonito. Tudo funciona no seu aparelho: nada é enviado para servidores, nada é vendido, nada desaparece. <NuxtLink to="/privacy" class="underline underline-offset-2 hover:text-foreground">Como tratamos seus dados</NuxtLink>.
           </p>
           <div class="flex flex-wrap gap-3 mt-6">
             <Button as-child size="lg" class="rounded-xl font-bold shadow-lg shadow-primary/25 hover:-translate-y-0.5 transition-transform">
@@ -87,7 +87,7 @@ onBeforeUnmount(() => {
       <div class="rounded-3xl bg-surface p-8 grid gap-3 content-start border border-border-soft">
         <h3 class="font-display text-2xl font-bold text-foreground">Seus dados são só seus</h3>
         <p class="text-muted-foreground leading-relaxed">
-          Não existe servidor para vazar nada. Seus currículos ficam guardados apenas no seu próprio aparelho, invisíveis para qualquer outra pessoa. Se um dia quiser levar tudo, baixe uma cópia com um clique.
+          Por padrão, não existe servidor para vazar nada: seus currículos ficam apenas no seu aparelho, invisíveis para qualquer outra pessoa. Se quiser sincronizar entre aparelhos, o opcional é criptografado de ponta a ponta — o servidor guarda blobs que nem ele consegue ler. Baixe uma cópia com um clique, quando quiser.
         </p>
         <Button as-child variant="blue" class="self-start rounded-xl font-bold">
           <NuxtLink to="/dashboard">Ver como funciona</NuxtLink>
