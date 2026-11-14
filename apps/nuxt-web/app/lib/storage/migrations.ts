@@ -2,11 +2,14 @@
  * Sistema de migração de schema para localStorage
  * v1.0.0 → v2.0.0: docs ganham estilo/tags/pinned/jobTitle; snapshots ganham label/note;
  * novos arrays de seções com defaults; settings key criada.
+ * v2.0.0 → v3.0.0: docs ganham kind/coverLetter/jobDescription/atsHistory e
+ * style.sectionOrder; índice ganha kind; settings ganha quotaWarnPct; chaves novas
+ * (applications, crypto, shares) são criadas vazias.
  */
 
 import { LS_KEYS, SCHEMA_VERSION, SCHEMA_VERSION_V1 } from "./keys";
 import { readJson, writeJson, removeKey } from "./storage";
-import { ResumeIndexSchema, ResumeDocSchema, SettingsSchema, type StorageMeta, type ResumeIndex, type ResumeDoc } from "./schema";
+import { ResumeIndexSchema, ResumeIndexItemSchema, ResumeDocSchema, SettingsSchema, type StorageMeta, type ResumeIndex, type ResumeDoc } from "./schema";
 
 type MigrationFn = () => void;
 
@@ -53,9 +56,54 @@ function migrateV1toV2(): void {
     writeJson(LS_KEYS.settings, SettingsSchema.parse({}));
 }
 
+/**
+ * Migração v2 → v3: re-normaliza docs (defaults preenchem kind/coverLetter/
+ * jobDescription/atsHistory/sectionOrder), índice ganha kind, settings ganha
+ * quotaWarnPct e as chaves novas nascem vazias.
+ */
+function migrateV2toV3(): void {
+    // Parse item a item: uma entrada corrompida não pode zerar o índice inteiro
+    // (isso apagaria todos os currículos da UI, embora os docs sigam no disco).
+    const rawIndex = readJson<unknown[]>(LS_KEYS.resumesIndex);
+    const index: ResumeIndex = Array.isArray(rawIndex)
+        ? rawIndex.flatMap(item => {
+            const parsed = ResumeIndexItemSchema.safeParse(item);
+            return parsed.success ? [parsed.data] : [];
+        })
+        : [];
+
+    const broken: string[] = [];
+    for (const item of index) {
+        const rawDoc = readJson<unknown>(LS_KEYS.resume(item.id));
+        const parsed = ResumeDocSchema.safeParse(rawDoc);
+        if (parsed.success) writeJson(LS_KEYS.resume(item.id), parsed.data);
+        else if (rawDoc !== null) broken.push(item.id);
+    }
+    // Índice apontando para doc ilegível = item fantasma que abre em branco.
+    const cleanIndex = broken.length > 0 ? index.filter(i => !broken.includes(i.id)) : index;
+    if (broken.length > 0) console.warn('[migrations] docs ilegíveis removidos do índice:', broken);
+
+    // Só grava se havia índice: sobrescrever com [] destruiria dados
+    if (Array.isArray(rawIndex)) writeJson(LS_KEYS.resumesIndex, cleanIndex);
+    // Campo a campo: um valor fora do enum não pode resetar tema/locale/etc.
+    const rawSettings = readJson<Record<string, unknown>>(LS_KEYS.settings) ?? {};
+    const defaults = SettingsSchema.parse({});
+    const merged: Record<string, unknown> = { ...defaults };
+    for (const [k, v] of Object.entries(rawSettings)) {
+        if (!(k in defaults)) continue;
+        const single = SettingsSchema.pick({ [k]: true } as never).safeParse({ [k]: v });
+        if (single.success) merged[k] = (single.data as Record<string, unknown>)[k];
+    }
+    writeJson(LS_KEYS.settings, SettingsSchema.parse(merged));
+
+    if (readJson(LS_KEYS.applications) === null) writeJson(LS_KEYS.applications, []);
+    if (readJson(LS_KEYS.shares) === null) writeJson(LS_KEYS.shares, []);
+}
+
 const MIGRATIONS: Record<string, MigrationFn> = {
     // "1.1.0": migrateToV1_1_0,
     "2.0.0": migrateV1toV2,
+    "3.0.0": migrateV2toV3,
 };
 
 export function runMigrations(): void {

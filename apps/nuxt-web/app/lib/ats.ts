@@ -8,16 +8,27 @@ import type { ResumeData } from "./storage/schema";
 const STOPWORDS = new Set([
     // PT
     'a', 'o', 'as', 'os', 'de', 'da', 'do', 'das', 'dos', 'e', 'em', 'um', 'uma', 'para', 'com',
-    'por', 'que', 'no', 'na', 'nos', 'nas', 'ao', 'aos', 'se', 'ou', 'ser', 'sua', 'seu', 'são',
-    'mais', 'como', 'pelo', 'pela', 'até', 'dos', 'das', 'não', 'também', 'você', 'sobre',
-    'experiência', 'conhecimento', 'desejável', 'necessário', 'empresa', 'vaga', 'candidato',
+    'por', 'que', 'no', 'na', 'nos', 'nas', 'ao', 'aos', 'se', 'ou', 'ser', 'sua', 'seu', 'sao',
+    'mais', 'como', 'pelo', 'pela', 'ate', 'nao', 'tambem', 'voce', 'sobre',
+    'experiencia', 'conhecimento', 'desejavel', 'necessario', 'empresa', 'vaga', 'candidato',
+    // vocabulário de anúncio de vaga (não é skill)
+    'requisito', 'requisitos', 'responsabilidade', 'responsabilidades', 'atividade', 'atividades',
+    'diferencial', 'diferenciais', 'beneficio', 'beneficios', 'oferecemos', 'buscamos', 'procuramos',
+    'profissional', 'area', 'atuacao', 'nivel', 'senior', 'junior', 'pleno', 'remoto', 'hibrido',
+    'presencial', 'jornada', 'salario', 'contratacao', 'clt', 'pj', 'time', 'equipe', 'projeto',
     // EN
     'the', 'a', 'an', 'of', 'in', 'on', 'to', 'for', 'with', 'and', 'or', 'is', 'are', 'be',
     'at', 'by', 'from', 'as', 'that', 'this', 'it', 'will', 'you', 'your', 'we', 'our', 'not',
     'experience', 'knowledge', 'required', 'company', 'job', 'candidate', 'role', 'work',
+    'requirements', 'responsibilities', 'benefits', 'senior', 'junior', 'remote', 'hybrid',
 ])
 
-/** Normaliza e tokeniza texto em palavras relevantes (minúsculas, sem acento, > 2 chars) */
+/**
+ * Normaliza e tokeniza texto em palavras relevantes.
+ * Pontuação de fim de frase é removida ("digital." → "digital"), mas pontuação
+ * interna é preservada ("node.js", "c++", "c#"). Tokens curtos com símbolo
+ * (c#, c++, go) sobrevivem ao filtro de tamanho — são nomes de tecnologia.
+ */
 export function tokenize(text: string): string[] {
     return text
         .toLowerCase()
@@ -25,7 +36,9 @@ export function tokenize(text: string): string[] {
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9\s+.#]/g, ' ')
         .split(/\s+/)
-        .filter(w => w.length > 2 && !STOPWORDS.has(w))
+        .map(w => w.replace(/^\.+|\.+$/g, ''))
+        .filter(w => w.length > 0 && !STOPWORDS.has(w))
+        .filter(w => w.length > 2 || /[#+]/.test(w) || w === 'go' || w === 'r')
 }
 
 function termFreq(tokens: string[]): Map<string, number> {

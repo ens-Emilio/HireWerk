@@ -1,5 +1,8 @@
 /**
- * Schemas Zod para validação de dados do localStorage — v2
+ * Schemas Zod para validação de dados do localStorage — v3
+ *
+ * v3 adiciona: kind/coverLetter (cartas), jobDescription + atsHistory (vaga),
+ * style.sectionOrder (ordem das seções) e ApplicationSchema (tracker).
  */
 
 import { z } from "zod";
@@ -9,7 +12,7 @@ import { z } from "zod";
 export const LinkItemSchema = z.object({
     label: z.string().default(""),
     url: z.string().default(""),
-    kind: z.enum(["linkedin", "github", "portfolio", "other"]).default("other"),
+    kind: z.enum(["linkedin", "github", "portfolio", "other"]).catch("other"),
 });
 
 export const ProjectItemSchema = z.object({
@@ -27,7 +30,7 @@ export const CertificationItemSchema = z.object({
 
 export const LanguageItemSchema = z.object({
     name: z.string().default(""),
-    level: z.enum(["A1", "A2", "B1", "B2", "C1", "C2", "nativo"]).default("B1"),
+    level: z.enum(["A1", "A2", "B1", "B2", "C1", "C2", "nativo"]).catch("B1"),
 });
 
 export const VolunteerItemSchema = z.object({
@@ -39,8 +42,10 @@ export const VolunteerItemSchema = z.object({
 
 export const ContactItemSchema = z.object({
     value: z.string().default(""),
-    label: z.enum(["pessoal", "profissional"]).default("pessoal"),
-    type: z.enum(["email", "phone"]).default("email"),
+    // ponytail: string livre — o rótulo é exibição, não invariante; enum quebrava
+    // o doc inteiro (import JSON Resume, sync de outra versão) por um valor inesperado.
+    label: z.string().default("pessoal"),
+    type: z.enum(["email", "phone"]).catch("email"),
 });
 
 /* ============ Dados do currículo ============ */
@@ -85,22 +90,57 @@ export const ResumeDataSchema = z.object({
 
 export type ResumeData = z.infer<typeof ResumeDataSchema>;
 
+/* ============ Carta de apresentação (v3) ============ */
+
+export const CoverLetterSchema = z.object({
+    /** Corpo da carta em texto puro (parágrafos separados por linha em branco) */
+    body: z.string().default(""),
+    /** Empresa e vaga alvo, para o cabeçalho da carta */
+    company: z.string().default(""),
+    role: z.string().default(""),
+    /** Tom usado na geração assistida (informativo, não altera o texto) */
+    tone: z.enum(["formal", "direto", "caloroso"]).catch("formal"),
+});
+
+export type CoverLetter = z.infer<typeof CoverLetterSchema>;
+
+/* ============ Histórico de análise ATS (v3) ============ */
+
+export const AtsEntrySchema = z.object({
+    at: z.string().datetime(),
+    score: z.number().int().min(0).max(100),
+    jobDescription: z.string().default(""),
+    missing: z.array(z.string()).default([]),
+});
+
+export type AtsEntry = z.infer<typeof AtsEntrySchema>;
+
 /* ============ Documento ============ */
 
 export const ResumeDocSchema = z.object({
     id: z.string().uuid(),
     title: z.string(),
+    /** v3: currículo ou carta de apresentação (mesma estrutura, render diferente) */
+    kind: z.enum(["resume", "coverLetter"]).catch("resume"),
     templateId: z.string(),
     // Estilo por doc (F3): cor de destaque, escala de fonte, densidade, papel
     style: z.object({
         accentColor: z.string().default(""),       // vazio = accent do template
-        fontScale: z.enum(["compact", "normal", "large"]).default("normal"),
-        density: z.enum(["compact", "normal", "relaxed"]).default("normal"),
-        paper: z.enum(["a4", "letter"]).default("a4"),
+        fontScale: z.enum(["compact", "normal", "large"]).catch("normal"),
+        density: z.enum(["compact", "normal", "relaxed"]).catch("normal"),
+        paper: z.enum(["a4", "letter"]).catch("a4"),
         footerText: z.string().default(""),        // rodapé impresso no PDF (vazio = sem rodapé)
-        iconTheme: z.enum(["none", "outline", "filled"]).default("outline"),
-    }).default({ accentColor: "", fontScale: "normal", density: "normal", paper: "a4", footerText: "", iconTheme: "outline" }),
+        iconTheme: z.enum(["none", "outline", "filled"]).catch("outline"),
+        /** v3: ordem das seções no editor e no preview (vazio = ordem padrão) */
+        sectionOrder: z.array(z.string()).default([]),
+    }).default({ accentColor: "", fontScale: "normal", density: "normal", paper: "a4", footerText: "", iconTheme: "outline", sectionOrder: [] }),
     data: ResumeDataSchema,
+    /** v3: carta de apresentação (só usada quando kind === 'coverLetter') */
+    coverLetter: CoverLetterSchema.default({ body: "", company: "", role: "", tone: "formal" }),
+    /** v3: descrição da vaga persistida (o score ATS deixa de ser volátil) */
+    jobDescription: z.string().default(""),
+    /** v3: histórico de análises ATS (mais recente primeiro, máx. 20) */
+    atsHistory: z.array(AtsEntrySchema).default([]),
     locale: z.string().default("pt-BR"),
     version: z.number().int().min(1).default(1),
     // Metadados de organização (F5)
@@ -119,6 +159,7 @@ export type ResumeDoc = z.infer<typeof ResumeDocSchema>;
 export const ResumeIndexItemSchema = z.object({
     id: z.string().uuid(),
     title: z.string(),
+    kind: z.enum(["resume", "coverLetter"]).catch("resume"),
     templateId: z.string(),
     tags: z.array(z.string()).default([]),
     pinned: z.boolean().default(false),
@@ -168,16 +209,45 @@ export const TemplateListSchema = z.array(TemplateSchema);
 
 export type TemplateList = z.infer<typeof TemplateListSchema>;
 
+/* ============ Tracker de candidaturas (v3) ============ */
+
+export const APPLICATION_STATUSES = ["wishlist", "applied", "interview", "offer", "rejected"] as const;
+
+export const ApplicationSchema = z.object({
+    id: z.string().uuid(),
+    company: z.string().default(""),
+    role: z.string().default(""),
+    status: z.enum(APPLICATION_STATUSES).catch("wishlist"),
+    /** Data da candidatura (ISO date, YYYY-MM-DD) — comparação lexical exige formato fixo */
+    appliedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")).catch(""),
+    /** Próximo passo / follow-up (ISO date) */
+    followUpAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")).catch(""),
+    /** Currículo usado nesta candidatura */
+    resumeId: z.string().default(""),
+    url: z.string().default(""),
+    notes: z.string().default(""),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+});
+
+export type Application = z.infer<typeof ApplicationSchema>;
+
+export const ApplicationListSchema = z.array(ApplicationSchema);
+
+export type ApplicationList = z.infer<typeof ApplicationListSchema>;
+
 /* ============ Settings globais (F0) ============ */
 
 export const SettingsSchema = z.object({
-    theme: z.enum(["light", "dark", "system"]).default("system"),
+    theme: z.enum(["light", "dark", "system"]).catch("system"),
     defaultTemplateId: z.string().default("classic"),
-    paper: z.enum(["a4", "letter"]).default("a4"),
-    fontScale: z.enum(["compact", "normal", "large"]).default("normal"),
+    paper: z.enum(["a4", "letter"]).catch("a4"),
+    fontScale: z.enum(["compact", "normal", "large"]).catch("normal"),
     locale: z.string().default("pt-BR"),
     disable3d: z.boolean().default(false), // tilt do hero (F6)
-    previewPosition: z.enum(["side", "below"]).default("side"), // F5
+    previewPosition: z.enum(["side", "below"]).catch("side"), // F5
+    /** v3: aviso de quota do localStorage a partir deste percentual */
+    quotaWarnPct: z.number().int().min(50).max(99).default(80),
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;

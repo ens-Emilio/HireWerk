@@ -13,17 +13,17 @@ export interface QualityCheck {
     hint?: string
 }
 
-export function completeness(data: ResumeData): { pct: number; checks: QualityCheck[] } {
+export function completeness(data: ResumeData, t: (key: string) => string): { pct: number; checks: QualityCheck[] } {
     const checks: QualityCheck[] = [
-        { id: 'name', label: 'Nome preenchido', done: data.name.trim().length > 1, weight: 10 },
-        { id: 'headline', label: 'Título profissional', done: data.headline.trim().length > 2, weight: 10, hint: 'Ex: Desenvolvedor Front-end' },
-        { id: 'summary', label: 'Resumo (40+ palavras)', done: data.summary.trim().split(/\s+/).filter(Boolean).length >= 40, weight: 15, hint: 'Duas a quatro linhas sobre sua trajetória' },
-        { id: 'contact', label: 'E-mail ou telefone', done: data.emails.some(e => e.value) || data.phones.some(p => p.value), weight: 15 },
-        { id: 'exp', label: 'Pelo menos 1 experiência', done: data.experiences.some(e => e.role.trim()), weight: 15 },
-        { id: 'expdesc', label: 'Descrição nas experiências', done: data.experiences.filter(e => e.role).every(e => e.description.trim().length > 20), weight: 10, hint: 'Use verbos de ação: liderei, reduzi, migrei' },
-        { id: 'edu', label: 'Formação', done: data.education.some(e => e.course.trim()), weight: 10 },
-        { id: 'skills', label: '5+ habilidades', done: data.skills.filter(Boolean).length >= 5, weight: 10, hint: 'Habilidades técnicas que a vaga pede' },
-        { id: 'links', label: 'LinkedIn ou portfólio', done: data.links.some(l => l.url.trim()), weight: 5 },
+        { id: 'name', label: t('quality.name'), done: data.name.trim().length > 1, weight: 10 },
+        { id: 'headline', label: t('quality.headline'), done: data.headline.trim().length > 2, weight: 10, hint: t('quality.headlineHint') },
+        { id: 'summary', label: t('quality.summary'), done: data.summary.trim().split(/\s+/).filter(Boolean).length >= 40, weight: 15, hint: t('quality.summaryHint') },
+        { id: 'contact', label: t('quality.contact'), done: data.emails.some(e => e.value) || data.phones.some(p => p.value), weight: 15 },
+        { id: 'exp', label: t('quality.exp'), done: data.experiences.some(e => e.role.trim()), weight: 15 },
+        { id: 'expdesc', label: t('quality.expdesc'), done: data.experiences.filter(e => e.role).every(e => e.description.trim().length > 20), weight: 10, hint: t('quality.expdescHint') },
+        { id: 'edu', label: t('quality.edu'), done: data.education.some(e => e.course.trim()), weight: 10 },
+        { id: 'skills', label: t('quality.skills'), done: data.skills.filter(Boolean).length >= 5, weight: 10, hint: t('quality.skillsHint') },
+        { id: 'links', label: t('quality.links'), done: data.links.some(l => l.url.trim()), weight: 5 },
     ]
 
     const total = checks.reduce((s, c) => s + c.weight, 0)

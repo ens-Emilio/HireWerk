@@ -30,10 +30,12 @@ export function writeJson(key: string, value: unknown): void {
     try {
         window.localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-        // QuotaExceededError: localStorage cheio
+        // QuotaExceededError: localStorage cheio — avisa a UI (QuotaBanner) e propaga
         if (error instanceof DOMException && error.name === "QuotaExceededError") {
             console.error("[Storage] Quota de localStorage excedida!");
-            throw new Error("Espaço de armazenamento cheio. Considere deletar currículos antigos.");
+            const message = "Espaço de armazenamento cheio. Considere deletar currículos antigos.";
+            window.dispatchEvent(new CustomEvent("hirewerk:quota", { detail: { message } }));
+            throw new Error(message);
         }
         console.error(`[Storage] Erro ao escrever chave "${key}":`, error);
         throw error;

@@ -4,7 +4,8 @@
  */
 
 import { LS_KEYS, MAX_SNAPSHOTS_PER_RESUME } from "../storage/keys";
-import { readJson, writeJson } from "../storage/storage";
+import { readJson } from "../storage/storage";
+import { readSecureJson, writeSecureJson, removeSecureKey } from "../storage/secure";
 import {
     VersionSnapshotListSchema,
     ResumeDocSchema,
@@ -20,7 +21,7 @@ export function createSnapshot(resume: ResumeDoc, label?: string): void {
     const key = LS_KEYS.resumeVersions(resume.id);
 
     // Ler snapshots existentes
-    const raw = readJson<VersionSnapshotList>(key);
+    const raw = readSecureJson<VersionSnapshotList>(key);
     const parsed = VersionSnapshotListSchema.safeParse(raw);
     const snapshots = parsed.success ? parsed.data : [];
 
@@ -41,15 +42,15 @@ export function createSnapshot(resume: ResumeDoc, label?: string): void {
         snapshots.pop();
     }
 
-    // Salvar
-    writeJson(key, snapshots);
+    // Salvar (cifra quando a criptografia local está ativa)
+    writeSecureJson(key, snapshots);
 }
 
 /**
  * Todos os snapshots de um currículo (mais recente primeiro)
  */
 export function getSnapshots(resumeId: string): VersionSnapshotList {
-    const parsed = VersionSnapshotListSchema.safeParse(readJson<VersionSnapshotList>(LS_KEYS.resumeVersions(resumeId)));
+    const parsed = VersionSnapshotListSchema.safeParse(readSecureJson<VersionSnapshotList>(LS_KEYS.resumeVersions(resumeId)));
     return parsed.success ? parsed.data : [];
 }
 
@@ -57,7 +58,7 @@ export function getSnapshots(resumeId: string): VersionSnapshotList {
  * Remove todos os snapshots de um currículo
  */
 export function deleteSnapshots(resumeId: string): void {
-    window.localStorage.removeItem(LS_KEYS.resumeVersions(resumeId));
+    removeSecureKey(LS_KEYS.resumeVersions(resumeId));
 }
 
 /**
@@ -71,17 +72,18 @@ export function getSnapshotByVersion(resumeId: string, version: number): Version
  * Restaura um snapshot específico como estado atual do doc.
  * O estado atual vai para o redo (recuperável) — não é destrutivo.
  */
-export function restoreSnapshot(resumeId: string, version: number): ResumeDoc | null {
+export function restoreSnapshot(resumeId: string, version: number, currentDoc?: ResumeDoc | null): ResumeDoc | null {
     const snap = getSnapshotByVersion(resumeId, version);
     if (!snap) return null;
 
-    // lê doc atual cru para preservar campos fora do snapshot (id, title, style, tags...)
-    const current = readJson<ResumeDoc>(LS_KEYS.resume(resumeId));
-    if (!current) return null;
+    // O doc atual precisa vir decifrado: ler a chave crua devolveria o envelope
+    // `{__enc}` e `version + 1` viraria NaN, corrompendo o currículo.
+    const current = currentDoc ?? readJson<ResumeDoc>(LS_KEYS.resume(resumeId));
+    if (!current || typeof current.version !== "number") return null;
 
-    // estado atual → redo
-    const future = readJson<ResumeDoc[]>(LS_KEYS.resumeFuture(resumeId)) ?? [];
-    writeJson(LS_KEYS.resumeFuture(resumeId), [current, ...future]);
+    // estado atual → redo (cifrado quando a criptografia está ativa)
+    const future = readSecureJson<ResumeDoc[]>(LS_KEYS.resumeFuture(resumeId)) ?? [];
+    writeSecureJson(LS_KEYS.resumeFuture(resumeId), [current, ...future]);
 
     const restored: ResumeDoc = {
         ...current,
@@ -89,7 +91,6 @@ export function restoreSnapshot(resumeId: string, version: number): ResumeDoc | 
         data: ResumeDocSchema.shape.data.safeParse(snap.data).data ?? current.data,
         updatedAt: new Date().toISOString(),
     };
-    writeJson(LS_KEYS.resume(resumeId), restored);
     return restored;
 }
 
@@ -101,7 +102,7 @@ export function labelSnapshot(resumeId: string, version: number, label: string |
     const target = snaps.find(s => s.version === version);
     if (!target) return;
     target.label = label;
-    writeJson(LS_KEYS.resumeVersions(resumeId), snaps);
+    writeSecureJson(LS_KEYS.resumeVersions(resumeId), snaps);
 }
 
 /**
@@ -153,7 +154,7 @@ export function recoverOrphan(orphanKey: string, title: string): ResumeDoc | nul
         updatedAt: now,
         deletedAt: null,
     });
-    writeJson(LS_KEYS.resume(resumeId), doc);
+    // Devolve o doc; quem chama grava via store (respeitando a criptografia)
     deleteSnapshots(resumeId); // snapshots viraram o doc; limpa a chave órfã
     return doc;
 }
