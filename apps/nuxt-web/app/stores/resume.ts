@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
+import { z } from 'zod'
 import { ref } from 'vue'
-import { LS_KEYS, SCHEMA_VERSION } from '~/lib/storage/keys'
+import { LS_KEYS, SCHEMA_VERSION, MAX_ATS_HISTORY, MAX_SNAPSHOTS_PER_RESUME } from '~/lib/storage/keys'
 import { readJson, writeJson, removeKey } from '~/lib/storage/storage'
 import { ensureStorageInitialized, getSettings, saveSettings } from '~/lib/storage/seed'
 import { runMigrations } from '~/lib/storage/migrations'
 import {
     ResumeDocSchema,
-    ResumeIndexSchema,
+    ResumeIndexItemSchema,
     type ResumeDoc,
     type ResumeIndex,
     type ResumeIndexItem,
@@ -16,6 +17,8 @@ import {
     type Settings,
 } from '~/lib/storage/schema'
 import { createSnapshot, deleteSnapshots, getSnapshots, restoreSnapshot, labelSnapshot, ensureDailySnapshot } from '~/lib/versioning/snapshot'
+import { readSecureJson, writeSecureJson, removeSecureKey, unlockSecureKeys, encryptSecureKeys, decryptSecureKeys, clearSecureMemory } from '~/lib/storage/secure'
+import { isEncryptionEnabled, isEncryptedDoc, encryptAtRest, decryptAtRest } from '~/lib/storage/crypto'
 import { exportJson as exportJsonFn } from '~/lib/export/json'
 import { exportPdf as exportPdfFn } from '~/lib/export/pdf'
 
@@ -24,13 +27,29 @@ export const useResumeStore = defineStore('resume', () => {
     const index = ref<ResumeIndex>([])
     const settings = ref<Settings | null>(null)
 
+    /**
+     * v3: cache de docs decifrados (só memória). Com criptografia ativa os docs
+     * em repouso são envelopes AES-GCM; `getResume` é síncrono, então a versão
+     * em claro vive aqui enquanto a sessão estiver destravada.
+     */
+    const plainCache = new Map<string, ResumeDoc>()
+
     if (import.meta.client) {
         ensureStorageInitialized()
         runMigrations()
 
-        const raw = readJson<ResumeIndex>(LS_KEYS.resumesIndex)
-        const parsed = ResumeIndexSchema.safeParse(raw)
-        index.value = parsed.success ? parsed.data : []
+        /**
+         * Parse item a item: um registro corrompido no índice não pode apagar a
+         * lista inteira da UI. Itens inválidos são descartados (e o doc em si
+         * continua no localStorage, recuperável).
+         */
+        const raw = readJson<unknown[]>(LS_KEYS.resumesIndex)
+        index.value = Array.isArray(raw)
+            ? raw.flatMap(item => {
+                const parsed = ResumeIndexItemSchema.safeParse(item)
+                return parsed.success ? [parsed.data] : []
+            })
+            : []
         settings.value = getSettings()
         ready.value = true
     }
@@ -41,25 +60,178 @@ export const useResumeStore = defineStore('resume', () => {
         saveSettings(settings.value)
     }
 
-    function getResume(id: string): ResumeDoc | null {
-        const raw = readJson(LS_KEYS.resume(id))
-        const parsed = ResumeDocSchema.safeParse(raw)
+    /**
+     * Escritas pendentes por doc (criptografia ativa é assíncrona).
+     * Uma cadeia de promessas por id garante ordem: saves consecutivos não se
+     * sobrepõem, e remover a chave invalida o que ainda estava em voo — sem
+     * isso, `wipeAll`/`hardDelete` podiam ser "ressuscitados" por um save tardio.
+     */
+    const writeChains = new Map<string, Promise<void>>()
+    const deletedIds = new Set<string>()
 
+    /**
+     * Grava o doc respeitando a criptografia em repouso.
+     *
+     * Retorna `false` quando não foi possível gravar (sessão cifrada travada) —
+     * o chamador NÃO deve atualizar o índice nesse caso, senão UI e disco
+     * divergem em silêncio.
+     */
+    function persistDoc(doc: ResumeDoc): boolean {
+        if (deletedIds.has(doc.id)) return false
+
+        if (!isEncryptionEnabled()) {
+            writeJson(LS_KEYS.resume(doc.id), doc)
+            return true
+        }
+
+        plainCache.set(doc.id, doc)
+        let ok = true
+        const previous = writeChains.get(doc.id) ?? Promise.resolve()
+        const chain = previous
+            .then(async () => {
+                if (deletedIds.has(doc.id)) return
+                const enc = await encryptAtRest(doc)
+                if (!enc) {
+                    ok = false
+                    return
+                }
+                writeJson(LS_KEYS.resume(doc.id), enc)
+            })
+            .catch((e) => {
+                ok = false
+                console.error('[ResumeStore] falha ao gravar doc cifrado:', e)
+            })
+            .finally(() => {
+                if (writeChains.get(doc.id) === chain) writeChains.delete(doc.id)
+            })
+        writeChains.set(doc.id, chain)
+        return ok
+    }
+
+    /** Invalida escritas pendentes de um doc (antes de remover a chave). */
+    function cancelPendingWrites(id: string): void {
+        deletedIds.add(id)
+        writeChains.delete(id)
+        plainCache.delete(id)
+    }
+
+    function getResume(id: string): ResumeDoc | null {
+        const raw = readJson<unknown>(LS_KEYS.resume(id))
+
+        if (isEncryptedDoc(raw)) {
+            const cached = plainCache.get(id)
+            if (cached) return cached
+            // Travado: o doc existe mas não é legível — o editor mostra o aviso
+            return null
+        }
+
+        const parsed = ResumeDocSchema.safeParse(raw)
         if (!parsed.success) {
             console.error('[ResumeStore] Erro ao validar currículo:', id, parsed.error)
             return null
         }
-
         return parsed.data
     }
 
-    function createResume(templateId?: string): ResumeDoc {
+    /** Ids de todo doc existente no localStorage (inclui órfãos fora do índice). */
+    function allDocIds(): string[] {
+        const ids = new Set(index.value.map(i => i.id))
+        for (const key of Object.keys(window.localStorage)) {
+            // Valida com o próprio schema: UUID em maiúsculas é válido e a
+            // regex antiga (só hex minúsculo) deixava esses docs em claro.
+            const m = key.match(/^hirewerk:resume:(.+)$/)
+            if (m?.[1] && z.string().uuid().safeParse(m[1]).success) ids.add(m[1])
+        }
+        return [...ids]
+    }
+
+    /** Chaves auxiliares de um doc que também guardam conteúdo pessoal. */
+    function auxKeys(id: string): string[] {
+        return [LS_KEYS.resumeVersions(id), LS_KEYS.resumeFuture(id)]
+    }
+
+    function allAuxKeys(): string[] {
+        return allDocIds().flatMap(auxKeys)
+    }
+
+    /** v3: depois de destravar, decifra todos os docs para o cache. */
+    async function unlockDocs(): Promise<number> {
+        let n = 0
+        for (const id of allDocIds()) {
+            const raw = readJson<unknown>(LS_KEYS.resume(id))
+            if (!isEncryptedDoc(raw)) continue
+            const doc = await decryptAtRest<ResumeDoc>(raw)
+            const parsed = doc ? ResumeDocSchema.safeParse(doc) : null
+            if (parsed?.success) {
+                plainCache.set(id, parsed.data)
+                n++
+            }
+        }
+        // Snapshots e pilha de redo guardam ResumeData completo
+        await unlockSecureKeys(allAuxKeys())
+        return n
+    }
+
+    /** v3: cifra todos os docs em repouso (após ativar a criptografia). */
+    async function encryptAllDocs(): Promise<number> {
+        let n = 0
+        for (const id of allDocIds()) {
+            const raw = readJson<unknown>(LS_KEYS.resume(id))
+            if (!raw || isEncryptedDoc(raw)) continue
+            const parsed = ResumeDocSchema.safeParse(raw)
+            if (!parsed.success) continue
+            plainCache.set(id, parsed.data)
+            const enc = await encryptAtRest(parsed.data)
+            if (enc) { writeJson(LS_KEYS.resume(id), enc); n++ }
+        }
+        await encryptSecureKeys(allAuxKeys())
+        return n
+    }
+
+    /** v3: decifra tudo para claro (antes de desativar a criptografia). */
+    /**
+     * Decifra todos os docs para o disco em claro. Retorna `{ ok, failed }`:
+     * desativar a criptografia com qualquer doc ilegível destruiria a chave e
+     * perderia esses currículos para sempre — o chamador precisa abortar.
+     */
+    async function decryptAllDocs(): Promise<{ ok: number; failed: string[] }> {
+        let n = 0
+        const failed: string[] = []
+        for (const id of allDocIds()) {
+            // Cache primeiro; senão decifra do envelope (ex.: outro doc no índice)
+            let doc = plainCache.get(id) ?? null
+            if (!doc) {
+                const raw = readJson<unknown>(LS_KEYS.resume(id))
+                if (isEncryptedDoc(raw)) {
+                    const plain = await decryptAtRest<ResumeDoc>(raw)
+                    doc = plain ? ResumeDocSchema.safeParse(plain).data ?? null : null
+                }
+            }
+            if (!doc) {
+                failed.push(id)
+                continue
+            }
+            writeJson(LS_KEYS.resume(id), doc)
+            n++
+        }
+        decryptSecureKeys(allAuxKeys())
+        return { ok: n, failed }
+    }
+
+    /** v3: descarta o cache em claro (ao travar a sessão). */
+    function clearPlainCache(): void {
+        plainCache.clear()
+        clearSecureMemory()
+    }
+
+    function createResume(templateId?: string, kind: 'resume' | 'coverLetter' = 'resume'): ResumeDoc {
         const now = new Date().toISOString()
         const id = crypto.randomUUID()
 
         const doc: ResumeDoc = ResumeDocSchema.parse({
             id,
-            title: 'Novo currículo',
+            title: kind === 'coverLetter' ? 'Nova carta de apresentação' : 'Novo currículo',
+            kind,
             templateId: templateId ?? settings.value?.defaultTemplateId ?? 'classic',
             data: {},
             locale: 'pt-BR',
@@ -69,11 +241,14 @@ export const useResumeStore = defineStore('resume', () => {
             deletedAt: null,
         })
 
-        writeJson(LS_KEYS.resume(id), doc)
+        if (!persistDoc(doc)) {
+            throw new Error('Não foi possível gravar o currículo (criptografia travada).')
+        }
 
         const newIndexItem: ResumeIndexItem = {
             id,
             title: doc.title,
+            kind,
             templateId: doc.templateId,
             tags: [],
             pinned: false,
@@ -86,6 +261,30 @@ export const useResumeStore = defineStore('resume', () => {
         writeJson(LS_KEYS.resumesIndex, index.value)
 
         return doc
+    }
+
+    /** Cria uma carta de apresentação, opcionalmente herdando os dados de um currículo */
+    function createCoverLetter(fromResumeId?: string): ResumeDoc {
+        const doc = createResume(undefined, 'coverLetter')
+        const source = fromResumeId ? getResume(fromResumeId) : null
+        if (!source) return doc
+
+        const merged: ResumeDoc = {
+            ...doc,
+            title: `Carta — ${source.title}`,
+            data: { ...source.data },
+            coverLetter: {
+                body: '',
+                company: '',
+                role: source.jobTitle || source.data.headline,
+                tone: 'formal',
+            },
+            jobDescription: source.jobDescription,
+        }
+        if (!persistDoc(merged)) return doc
+        index.value = index.value.map(i => i.id === doc.id ? { ...i, title: merged.title } : i)
+        writeJson(LS_KEYS.resumesIndex, index.value)
+        return merged
     }
 
     /** Duplicar "para a vaga X" (F9): título composto + jobTitle preenchido */
@@ -108,11 +307,12 @@ export const useResumeStore = defineStore('resume', () => {
             deletedAt: null,
         }
 
-        writeJson(LS_KEYS.resume(newId), duplicate)
+        if (!persistDoc(duplicate)) return null
 
         const newItem: ResumeIndexItem = {
             id: newId,
             title: duplicate.title,
+            kind: duplicate.kind,
             templateId: duplicate.templateId,
             tags: [...original.tags],
             pinned: false,
@@ -147,11 +347,13 @@ export const useResumeStore = defineStore('resume', () => {
             updatedAt: now,
         }
 
-        writeJson(LS_KEYS.resume(doc.id), updated)
+        if (!persistDoc(updated)) {
+            throw new Error('Não foi possível salvar (criptografia travada).')
+        }
 
         // Limpar histórico de "Redo" (memória + disco)
-        if (readJson(LS_KEYS.resumeFuture(doc.id))) {
-            removeKey(LS_KEYS.resumeFuture(doc.id))
+        if (readSecureJson(LS_KEYS.resumeFuture(doc.id)) !== null) {
+            removeSecureKey(LS_KEYS.resumeFuture(doc.id))
         }
 
         index.value = index.value.map(item =>
@@ -159,6 +361,7 @@ export const useResumeStore = defineStore('resume', () => {
                 ? {
                     ...item,
                     title: updated.title,
+                    kind: updated.kind,
                     templateId: updated.templateId,
                     tags: updated.tags,
                     pinned: updated.pinned,
@@ -174,7 +377,7 @@ export const useResumeStore = defineStore('resume', () => {
         const currentParams = getResume(id)
 
         const key = LS_KEYS.resumeVersions(id)
-        const rawSnapshots = readJson(key)
+        const rawSnapshots = readSecureJson<unknown>(key)
         const parsedList = VersionSnapshotListSchema.safeParse(rawSnapshots)
         const snapshots = parsedList.success ? parsedList.data : []
 
@@ -216,12 +419,12 @@ export const useResumeStore = defineStore('resume', () => {
         if (!previousState) return
 
         if (currentParams) {
-            const future = [currentParams, ...(readJson<ResumeDoc[]>(LS_KEYS.resumeFuture(id)) ?? [])]
-            writeJson(LS_KEYS.resumeFuture(id), future)
+            const future = [currentParams, ...(readSecureJson<ResumeDoc[]>(LS_KEYS.resumeFuture(id)) ?? [])]
+            writeSecureJson(LS_KEYS.resumeFuture(id), future)
         }
 
-        writeJson(LS_KEYS.resume(id), previousState)
-        writeJson(key, remainingSnapshots)
+        persistDoc(previousState)
+        writeSecureJson(key, remainingSnapshots)
 
         index.value = index.value.map(item =>
             item.id === id
@@ -233,6 +436,7 @@ export const useResumeStore = defineStore('resume', () => {
             const newItem: ResumeIndexItem = {
                 id: previousState.id,
                 title: previousState.title,
+                kind: previousState.kind,
                 templateId: previousState.templateId,
                 tags: previousState.tags,
                 pinned: previousState.pinned,
@@ -249,7 +453,7 @@ export const useResumeStore = defineStore('resume', () => {
         const currentParams = getResume(id)
         if (!currentParams) return
 
-        const futureList = readJson<ResumeDoc[]>(LS_KEYS.resumeFuture(id)) ?? []
+        const futureList = readSecureJson<ResumeDoc[]>(LS_KEYS.resumeFuture(id)) ?? []
         if (futureList.length === 0) return
 
         const nextState = futureList[0]
@@ -259,7 +463,7 @@ export const useResumeStore = defineStore('resume', () => {
 
         createSnapshot(currentParams)
 
-        writeJson(LS_KEYS.resume(id), nextState)
+        persistDoc(nextState)
 
         futureSnapshotsWrite(id, remainingFuture)
 
@@ -271,13 +475,11 @@ export const useResumeStore = defineStore('resume', () => {
     }
 
     function futureSnapshotsWrite(id: string, list: ResumeDoc[]) {
-        writeJson(LS_KEYS.resumeFuture(id), list)
+        writeSecureJson(LS_KEYS.resumeFuture(id), list)
     }
 
     function canUndo(id: string): boolean {
-        const key = LS_KEYS.resumeVersions(id)
-        const snapshots = readJson<ResumeDoc[]>(key) || []
-        return snapshots.length > 0
+        return getSnapshots(id).length > 0
     }
 
     /** Lista snapshots (para a timeline da UI) */
@@ -287,8 +489,9 @@ export const useResumeStore = defineStore('resume', () => {
 
     /** Restaura versão específica e re-sincroniza índice */
     function restoreVersion(id: string, version: number): boolean {
-        const restored = restoreSnapshot(id, version)
+        const restored = restoreSnapshot(id, version, getResume(id))
         if (!restored) return false
+        if (!persistDoc(restored)) return false
         index.value = index.value.map(item =>
             item.id === id ? { ...item, updatedAt: restored.updatedAt } : item
         )
@@ -302,7 +505,7 @@ export const useResumeStore = defineStore('resume', () => {
     }
 
     function canRedo(id: string): boolean {
-        const futureList = readJson<ResumeDoc[]>(LS_KEYS.resumeFuture(id)) ?? []
+        const futureList = readSecureJson<ResumeDoc[]>(LS_KEYS.resumeFuture(id)) ?? []
         return futureList.length > 0
     }
     function softDelete(id: string) {
@@ -316,7 +519,7 @@ export const useResumeStore = defineStore('resume', () => {
             updatedAt: now,
         }
 
-        writeJson(LS_KEYS.resume(id), updated)
+        if (!persistDoc(updated)) return
 
         index.value = index.value.map(item =>
             item.id === id ? { ...item, deletedAt: now, updatedAt: now } : item
@@ -335,7 +538,7 @@ export const useResumeStore = defineStore('resume', () => {
             updatedAt: now,
         }
 
-        writeJson(LS_KEYS.resume(id), updated)
+        if (!persistDoc(updated)) return
 
         index.value = index.value.map(item =>
             item.id === id ? { ...item, deletedAt: null, updatedAt: now } : item
@@ -344,9 +547,10 @@ export const useResumeStore = defineStore('resume', () => {
     }
 
     function hardDelete(id: string) {
+        cancelPendingWrites(id)
         removeKey(LS_KEYS.resume(id))
         deleteSnapshots(id)
-        removeKey(LS_KEYS.resumeFuture(id))
+        removeSecureKey(LS_KEYS.resumeFuture(id))
 
         index.value = index.value.filter(item => item.id !== id)
         writeJson(LS_KEYS.resumesIndex, index.value)
@@ -362,8 +566,15 @@ export const useResumeStore = defineStore('resume', () => {
         const docs = index.value.map(item => ({
             ...item,
             doc: getResume(item.id),
-            snapshots: readJson<unknown[]>(LS_KEYS.resumeVersions(item.id)) ?? [],
+            snapshots: readSecureJson<unknown[]>(LS_KEYS.resumeVersions(item.id)) ?? [],
         }))
+
+        // Sessão cifrada travada: getResume devolve null para tudo. Exportar
+        // assim geraria um backup de `doc: null` que só falha na restauração.
+        const unreadable = docs.filter(d => d.doc === null)
+        if (unreadable.length > 0) {
+            throw new Error(`Não foi possível ler ${unreadable.length} currículo(s) — destrave a criptografia antes de exportar.`)
+        }
 
         return JSON.stringify({
             app: 'hirewerk',
@@ -393,14 +604,20 @@ export const useResumeStore = defineStore('resume', () => {
                 ? { ...doc, id: doc.id, updatedAt: now }
                 : doc
 
-            writeJson(LS_KEYS.resume(finalDoc.id), finalDoc)
+            if (!persistDoc(finalDoc)) continue
             if (Array.isArray(entry.snapshots) && entry.snapshots.length > 0) {
-                writeJson(LS_KEYS.resumeVersions(finalDoc.id), entry.snapshots)
+                // Backup não é fonte confiável: valida e limita, senão entradas
+                // inválidas ficam no disco e canUndo mente sobre o histórico.
+                const snapshots = VersionSnapshotListSchema.safeParse(entry.snapshots)
+                if (snapshots.success) {
+                    writeSecureJson(LS_KEYS.resumeVersions(finalDoc.id), snapshots.data.slice(0, MAX_SNAPSHOTS_PER_RESUME))
+                }
             }
 
             const indexItem: ResumeIndexItem = {
                 id: finalDoc.id,
                 title: finalDoc.title,
+                kind: finalDoc.kind,
                 templateId: finalDoc.templateId,
                 tags: finalDoc.tags,
                 pinned: finalDoc.pinned,
@@ -427,6 +644,9 @@ export const useResumeStore = defineStore('resume', () => {
 
     /** Apagar TUDO (com confirm externo) */
     function wipeAll(): void {
+        // Invalida escritas cifradas em voo antes de remover as chaves — senão
+        // uma promessa pendente recria o doc logo após o "apagar tudo".
+        for (const item of index.value) cancelPendingWrites(item.id)
         const keys = Object.keys(window.localStorage).filter(k => k.startsWith('hirewerk:'))
         keys.forEach(k => window.localStorage.removeItem(k))
         index.value = []
@@ -442,6 +662,74 @@ export const useResumeStore = defineStore('resume', () => {
             }
         }
         return total
+    }
+
+    /* ============ v3: busca no conteúdo ============ */
+
+    /** Texto pesquisável de um doc (título, vaga, tags, dados e carta) */
+    function searchableText(doc: ResumeDoc): string {
+        const d = doc.data
+        return [
+            doc.title, doc.jobTitle, ...doc.tags,
+            d.name, d.headline, d.summary, d.location,
+            ...d.skills, ...d.softSkills,
+            ...d.experiences.flatMap(e => [e.role, e.company, e.period, e.description]),
+            ...d.education.flatMap(e => [e.course, e.institution]),
+            ...d.projects.flatMap(p => [p.name, p.stack, p.description]),
+            ...d.certifications.flatMap(c => [c.name, c.issuer]),
+            ...d.volunteer.flatMap(v => [v.role, v.org, v.description]),
+            doc.coverLetter.body, doc.coverLetter.company, doc.coverLetter.role,
+        ].filter(Boolean).join(' ').toLowerCase()
+    }
+
+    /** Ids de docs cujo conteúdo contém o termo (busca em skills, bullets, carta...) */
+    function searchInContent(query: string): Set<string> {
+        const q = query.trim().toLowerCase()
+        if (!q) return new Set()
+        const hits = new Set<string>()
+        for (const item of index.value) {
+            if (item.deletedAt) continue
+            const doc = getResume(item.id)
+            if (doc && searchableText(doc).includes(q)) hits.add(item.id)
+        }
+        return hits
+    }
+
+    /* ============ v3: ações em lote ============ */
+
+    function bulkSoftDelete(ids: string[]): number {
+        let n = 0
+        for (const id of ids) {
+            if (getResume(id)) { softDelete(id); n++ }
+        }
+        return n
+    }
+
+    function bulkRestore(ids: string[]): number {
+        let n = 0
+        for (const id of ids) {
+            if (getResume(id)) { restore(id); n++ }
+        }
+        return n
+    }
+
+    function bulkHardDelete(ids: string[]): number {
+        let n = 0
+        for (const id of ids) {
+            if (getResume(id)) { hardDelete(id); n++ }
+        }
+        return n
+    }
+
+    /* ============ v3: histórico ATS ============ */
+
+    function recordAts(id: string, entry: { score: number; jobDescription: string; missing: string[] }): void {
+        const doc = getResume(id)
+        if (!doc) return
+        const history = [{ at: new Date().toISOString(), ...entry }, ...doc.atsHistory].slice(0, MAX_ATS_HISTORY)
+        // Passa por updateResume: bumpa version/updatedAt (senão o push do sync
+        // é rejeitado e o histórico nunca chega a outro aparelho) e snapshot.
+        updateResume({ ...doc, atsHistory: history, jobDescription: entry.jobDescription })
     }
 
     function exportPdf(id: string) {
@@ -463,6 +751,7 @@ export const useResumeStore = defineStore('resume', () => {
         updateSettings,
         getResume,
         createResume,
+        createCoverLetter,
         updateResume,
         duplicateResume,
         softDelete,
@@ -482,5 +771,14 @@ export const useResumeStore = defineStore('resume', () => {
         wipeAll,
         estimateUsage,
         exportAll,
+        searchInContent,
+        bulkSoftDelete,
+        bulkRestore,
+        bulkHardDelete,
+        recordAts,
+        unlockDocs,
+        encryptAllDocs,
+        decryptAllDocs,
+        clearPlainCache,
     }
 })
