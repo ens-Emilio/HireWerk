@@ -19,6 +19,9 @@ defineProps<Props>()
 .a4-page {
   background: white;
   color: #1a1a1a;
+  /* a folha imprime em branco: tokens de texto no papel travam nos valores do
+     light, senão o dark inverte muted-foreground e some na folha branca */
+  --muted-foreground: 244 6% 44%;
   box-sizing: border-box;
 }
 </style>

@@ -14,14 +14,14 @@ const props = defineProps<{
 
 const ACCENTS: Record<string, string> = {
   '': '',           // accent do design system (padrão)
-  blue: '#4a5df9',
-  green: '#0e7a4a',
-  violet: '#7b5df9',
-  rose: '#e0447c',
-  orange: '#e07a2f',
-  teal: '#0e7a72',
-  red: '#c22f2f',
-  ink: '#17153a',
+  blue: '#2563eb',
+  green: '#16a34a',
+  violet: '#7c3aed',
+  rose: '#e11d48',
+  orange: '#ea580c',
+  teal: '#0d9488',
+  red: '#dc2626',
+  ink: '#1e1e24',
 }
 
 const accent = computed(() => {
