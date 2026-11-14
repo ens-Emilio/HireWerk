@@ -2,31 +2,21 @@
 /**
  * Tour de primeira visita (F5 #79) — 3 dicas, dismissível, localStorage.
  */
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Button } from '~/components/ui/button'
+import { useI18n } from '~/composables/useI18n'
 
+const { t } = useI18n()
 const STORAGE_KEY = 'hirewerk:tour-done'
 
 const visible = ref(false)
 const step = ref(0)
 
-const STEPS = [
-  {
-    title: 'Bem-vindo ao HireWerk!',
-    text: 'Um construtor de currículos que funciona inteiro no seu aparelho. Sem cadastro, sem servidor, sem custo.',
-    icon: 'lucide:sparkles',
-  },
-  {
-    title: 'Tudo salvo sozinho',
-    text: 'Enquanto você escreve, cada versão anterior é guardada. Errou? Desfaça — mesmo depois de fechar a página.',
-    icon: 'lucide:history',
-  },
-  {
-    title: 'Compartilhe um link bonito',
-    text: 'No editor, o botão "Compartilhar" cria um link que abre seu currículo em qualquer aparelho.',
-    icon: 'lucide:share-2',
-  },
-]
+const STEPS = computed(() => [
+  { title: t('tour.step1.title'), text: t('tour.step1.text'), icon: 'lucide:sparkles' },
+  { title: t('tour.step2.title'), text: t('tour.step2.text'), icon: 'lucide:history' },
+  { title: t('tour.step3.title'), text: t('tour.step3.text'), icon: 'lucide:share-2' },
+])
 
 onMounted(() => {
   try {
@@ -37,7 +27,7 @@ onMounted(() => {
 })
 
 function next() {
-  if (step.value < STEPS.length - 1) {
+  if (step.value < STEPS.value.length - 1) {
     step.value++
   } else {
     finish()
@@ -72,8 +62,8 @@ function finish() {
           />
         </div>
         <div class="flex gap-2">
-          <Button variant="ghost" size="sm" @click="finish">Pular</Button>
-          <Button size="sm" @click="next">{{ step < STEPS.length - 1 ? 'Próximo' : 'Começar' }}</Button>
+          <Button variant="ghost" size="sm" @click="finish">{{ t('tour.skip') }}</Button>
+          <Button size="sm" @click="next">{{ step < STEPS.length - 1 ? t('tour.next') : t('tour.start') }}</Button>
         </div>
       </div>
     </div>

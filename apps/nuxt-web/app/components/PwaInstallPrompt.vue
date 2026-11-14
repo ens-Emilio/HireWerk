@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Button } from '~/components/ui/button'
+import { useI18n } from '~/composables/useI18n'
 
+const { t } = useI18n()
 const { $pwa } = useNuxtApp()
 const showPrompt = computed(() =>
   $pwa?.showInstallPrompt && !$pwa?.isPWAInstalled
@@ -24,14 +26,14 @@ function handleDismiss() {
       <Icon name="lucide:download" class="w-5 h-5" />
     </div>
     <div class="flex-1 min-w-0">
-      <p class="font-semibold text-sm text-foreground">Instalar HireWerk</p>
-      <p class="text-xs text-muted-foreground">Use offline, direto da sua tela inicial</p>
+      <p class="font-semibold text-sm text-foreground">{{ t('pwa.install') }}</p>
+      <p class="text-xs text-muted-foreground">{{ t('pwa.installTitle') }}</p>
     </div>
     <Button
       size="sm"
       @click="handleInstall"
     >
-      Instalar
+      {{ t('pwa.installCta') }}
     </Button>
     <Button
       variant="ghost"

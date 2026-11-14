@@ -14,7 +14,7 @@ const PORT = 4174
 const ROOT = '.output/public'
 
 // rotas estáticas geradas pelo nuxt generate
-const ROUTES = ['/', '/dashboard/', '/resumes/', '/templates/', '/settings/', '/about/', '/resumes/trash/']
+const ROUTES = ['/', '/dashboard/', '/resumes/', '/applications/', '/templates/', '/settings/', '/about/', '/guide/', '/resumes/trash/']
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon' }
 

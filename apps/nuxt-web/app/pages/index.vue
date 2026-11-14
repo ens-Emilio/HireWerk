@@ -2,6 +2,9 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { Button } from '~/components/ui/button'
 import { Card } from '~/components/ui/card'
+import { useI18n } from '~/composables/useI18n'
+
+const { t } = useI18n()
 const sheet = ref<HTMLElement | null>(null)
 const stage = ref<HTMLElement | null>(null)
 
@@ -39,20 +42,20 @@ onBeforeUnmount(() => {
       <div class="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center">
         <div>
           <p class="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground mb-3 before:content-[''] before:w-6 before:h-[3px] before:rounded before:bg-primary">
-            Grátis, sem cadastro obrigatório, e seus dados ficam só com você
+            {{ t('landing.badge') }}
           </p>
           <h1 class="font-display text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-tight">
-            O currículo pronto em minutos, não em horas
+            {{ t('landing.title') }}
           </h1>
           <p class="mt-4 text-lg text-muted-foreground max-w-[52ch] leading-relaxed">
-            Escreva, escolha o visual e compartilhe um link bonito. Tudo funciona no seu aparelho: nada é enviado para servidores, nada é vendido, nada desaparece. <NuxtLink to="/privacy" class="underline underline-offset-2 hover:text-foreground">Como tratamos seus dados</NuxtLink>.
+            {{ t('landing.subtitle') }} <NuxtLink to="/privacy" class="underline underline-offset-2 hover:text-foreground">{{ t('landing.privacyLink') }}</NuxtLink>.
           </p>
           <div class="flex flex-wrap gap-3 mt-6">
             <Button as-child size="lg" class="rounded-xl font-bold shadow-lg shadow-primary/25 hover:-translate-y-0.5 transition-transform">
-              <NuxtLink to="/dashboard">Criar meu primeiro currículo</NuxtLink>
+              <NuxtLink to="/dashboard">{{ t('landing.ctaPrimary') }}</NuxtLink>
             </Button>
             <Button as-child variant="outline" size="lg" class="rounded-xl font-bold">
-              <NuxtLink to="/templates">Explorar os modelos</NuxtLink>
+              <NuxtLink to="/templates">{{ t('landing.ctaSecondary') }}</NuxtLink>
             </Button>
           </div>
         </div>
@@ -61,23 +64,23 @@ onBeforeUnmount(() => {
           <div class="a4-3d" ref="sheet">
             <div class="a4-face">
               <div>
-                <div class="font-display font-bold text-lg md:text-xl">Maria Silva</div>
-                <div class="text-[11px] text-[#6b67a0] uppercase tracking-widest mt-0.5">Designer de produto</div>
+                <div class="font-display font-bold text-lg md:text-xl">{{ t('landing.sampleName') }}</div>
+                <div class="text-[11px] text-[#6b6a78] uppercase tracking-widest mt-0.5">{{ t('landing.sampleRole') }}</div>
               </div>
               <div>
                 <div class="a4-line w-[85%]"></div>
                 <div class="a4-line w-[60%]"></div>
                 <div class="a4-line w-[75%]"></div>
                 <div class="flex gap-1.5 flex-wrap mt-2.5">
-                  <span class="a4-chip" style="background:#fff7d6">Figma</span>
-                  <span class="a4-chip bg-[#ffe3f3]">Pesquisa</span>
-                  <span class="a4-chip bg-[#d8f6f2]">Protótipos</span>
+                  <span class="a4-chip" style="background:#FFF1EB">{{ t('landing.sampleSkill1') }}</span>
+                  <span class="a4-chip bg-[#DCFCE7]">{{ t('landing.sampleSkill2') }}</span>
+                  <span class="a4-chip bg-[#F4F4F6]">{{ t('landing.sampleSkill3') }}</span>
                 </div>
               </div>
             </div>
           </div>
           <figcaption class="mt-4 text-xs text-muted-foreground text-center max-w-[40ch]">
-            Passe o cursor sobre a folha: é assim que seu currículo aparece enquanto você escreve.
+            {{ t('landing.figureCaption') }}
           </figcaption>
         </figure>
       </div>
@@ -85,25 +88,25 @@ onBeforeUnmount(() => {
 
     <div class="max-w-5xl mx-auto px-4 pb-28 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
       <div class="rounded-3xl bg-surface p-8 grid gap-3 content-start border border-border-soft">
-        <h3 class="font-display text-2xl font-bold text-foreground">Seus dados são só seus</h3>
+        <h3 class="font-display text-2xl font-bold text-foreground">{{ t('landing.privacyTitle') }}</h3>
         <p class="text-muted-foreground leading-relaxed">
-          Por padrão, não existe servidor para vazar nada: seus currículos ficam apenas no seu aparelho, invisíveis para qualquer outra pessoa. Se quiser sincronizar entre aparelhos, o opcional é criptografado de ponta a ponta — o servidor guarda blobs que nem ele consegue ler. Baixe uma cópia com um clique, quando quiser.
+          {{ t('landing.privacyBody') }}
         </p>
         <Button as-child variant="blue" class="self-start rounded-xl font-bold">
-          <NuxtLink to="/dashboard">Ver como funciona</NuxtLink>
+          <NuxtLink to="/dashboard">{{ t('landing.howItWorks') }}</NuxtLink>
         </Button>
       </div>
       <div class="grid gap-6">
         <Card class="p-6 rounded-3xl">
-          <h3 class="font-display text-xl font-bold text-foreground">Salva sozinho, sempre</h3>
+          <h3 class="font-display text-xl font-bold text-foreground">{{ t('landing.autosaveTitle') }}</h3>
           <p class="mt-2 text-sm text-muted-foreground leading-relaxed">
-            Enquanto você escreve, tudo é salvo automaticamente. Errou? Dê um passo atrás e recupere qualquer versão anterior, mesmo depois de fechar a página.
+            {{ t('landing.autosaveBody') }}
           </p>
         </Card>
         <Card class="p-6 rounded-3xl">
-          <h3 class="font-display text-xl font-bold text-foreground">Sai exatamente como você vê</h3>
+          <h3 class="font-display text-xl font-bold text-foreground">{{ t('landing.wysiwygTitle') }}</h3>
           <p class="mt-2 text-sm text-muted-foreground leading-relaxed">
-            Um clique e o PDF sai limpo: só a folha, sem menus nem botões. O que a empresa recebe é exatamente o que você vê na tela.
+            {{ t('landing.wysiwygBody') }}
           </p>
         </Card>
       </div>
@@ -125,19 +128,19 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   background: #fff;
-  color: #17153a;
+  color: #1e1e24;
   border-radius: 6px;
-  box-shadow: 0 18px 44px rgba(23, 21, 58, 0.18);
+  box-shadow: 0 18px 44px rgba(30, 30, 36, 0.18);
   padding: 8%;
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 6%;
 }
-.dark .a4-face { background: #fdfcff; }
+.dark .a4-face { background: #1b1b22; color: #FAFAFA; }
 .a4-line {
   height: 6px;
   border-radius: 3px;
-  background: #e9e7f6;
+  background: #E4E4E8;
   margin-top: 7px;
 }
 .a4-chip {
@@ -145,6 +148,6 @@ onBeforeUnmount(() => {
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 99px;
-  color: #17153a;
+  color: #1e1e24;
 }
 </style>

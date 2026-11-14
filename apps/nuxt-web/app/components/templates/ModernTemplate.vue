@@ -1,21 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from '~/composables/useI18n'
 import type { ResumeData } from '~/lib/storage/schema'
-import { cn } from '~/lib/utils'
+import { cn, formatLanguage } from '~/lib/utils'
 import { Badge } from '~/components/ui/badge'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   data: ResumeData
 }>()
 
-const name = computed(() => props.data.name?.trim() || "Nome Completo")
-const headline = computed(() => props.data.headline?.trim() || "Profissão / Título")
-const summary = computed(() => props.data.summary?.trim() || "Resumo profissional aparecerá aqui.")
+const name = computed(() => props.data.name?.trim() || t('cv.namePlaceholder'))
+const headline = computed(() => props.data.headline?.trim() || t('cv.headlinePlaceholder'))
+const summary = computed(() => props.data.summary?.trim() || t('cv.summaryPlaceholder'))
 const skills = computed(() => (props.data.skills ?? []).filter(Boolean))
 const softSkills = computed(() => (props.data.softSkills ?? []).filter(Boolean))
 const experiences = computed(() => (props.data.experiences ?? []).filter((e) => e && (e.role || e.company)))
 const education = computed(() => (props.data.education ?? []).filter((e) => e && (e.course || e.institution)))
-const languages = computed(() => (props.data.languages ?? []).filter(Boolean))
+const languages = computed(() => (props.data.languages ?? []).map(formatLanguage).filter(Boolean))
 </script>
 
 <template>
@@ -27,11 +30,11 @@ const languages = computed(() => (props.data.languages ?? []).filter(Boolean))
 
     <section class="mt-5 grid gap-6 md:grid-cols-[1fr_260px]">
       <div>
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Resumo</h3>
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{{ t('cv.summary') }}</h3>
         <p class="mt-2 text-sm leading-relaxed whitespace-pre-wrap">{{ summary }}</p>
 
         <div v-if="experiences.length > 0" class="mt-5">
-          <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Experiência</h3>
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{{ t('cv.experience') }}</h3>
           <div class="mt-2 space-y-3">
             <div v-for="(exp, i) in experiences" :key="i">
               <div class="font-medium">{{ exp.role || "Cargo" }}<span v-if="exp.company"> — {{ exp.company }}</span></div>
@@ -45,7 +48,7 @@ const languages = computed(() => (props.data.languages ?? []).filter(Boolean))
         </div>
 
         <div v-if="education.length > 0" class="mt-5">
-          <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Educação</h3>
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{{ t('cv.education') }}</h3>
           <div class="mt-2 space-y-1">
             <div v-for="(ed, i) in education" :key="i">
               {{ ed.course || "Curso" }}<span v-if="ed.institution"> — {{ ed.institution }}</span>
@@ -55,7 +58,7 @@ const languages = computed(() => (props.data.languages ?? []).filter(Boolean))
       </div>
       <aside>
         <div v-if="skills.length > 0">
-          <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Skills</h3>
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{{ t('cv.skills') }}</h3>
           <div class="mt-2 flex flex-wrap gap-2">
             <Badge 
               v-for="(s, i) in skills" 
@@ -68,7 +71,7 @@ const languages = computed(() => (props.data.languages ?? []).filter(Boolean))
           </div>
         </div>
         <div v-if="softSkills.length > 0" class="mt-4">
-          <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Soft Skills</h3>
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{{ t('cv.softSkills') }}</h3>
           <div class="mt-2 flex flex-wrap gap-2">
             <Badge 
               v-for="(s, i) in softSkills" 
@@ -81,7 +84,7 @@ const languages = computed(() => (props.data.languages ?? []).filter(Boolean))
           </div>
         </div>
         <div v-if="languages.length > 0" class="mt-4">
-          <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Idiomas</h3>
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{{ t('cv.languages') }}</h3>
           <div class="mt-2 text-[12px] space-y-0.5">
             <div v-for="(l, i) in languages" :key="i">{{ l }}</div>
           </div>

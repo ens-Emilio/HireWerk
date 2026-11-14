@@ -2,7 +2,7 @@
 import { useResumeStore } from '~/stores/resume'
 import { useI18n } from '~/composables/useI18n'
 import { useRoute, useRouter } from 'vue-router'
-import { ref, computed, watch, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, defineAsyncComponent, nextTick } from 'vue'
 import { createError } from '#app'
 import type { ResumeData, VersionSnapshot } from '~/lib/storage/schema'
 import { ResumeDocSchema } from '~/lib/storage/schema'
@@ -17,9 +17,17 @@ import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
 import { completeness } from '~/lib/quality'
 import { scoreAts } from '~/lib/ats'
+import { lintResume, lintSummary } from '~/lib/lint'
+import { tailorSuggestions, applySuggestion, type TailorSuggestion } from '~/lib/tailor'
+import { generateCoverLetter } from '~/lib/coverletter'
+import { isEncryptionEnabled, isUnlocked } from '~/lib/storage/crypto'
 import { Separator } from '~/components/ui/separator'
 import { Badge } from '~/components/ui/badge'
 import { Tooltip } from '~/components/ui/tooltip'
+import VersionDiff from '~/components/editor/VersionDiff.vue'
+import LintPanel from '~/components/editor/LintPanel.vue'
+import PublishPanel from '~/components/editor/PublishPanel.vue'
+import CoverLetterTemplate from '~/components/templates/CoverLetterTemplate.vue'
 
 const ClassicTemplate = defineAsyncComponent(() => import('~/components/templates/ClassicTemplate.vue'))
 const MinimalTemplate = defineAsyncComponent(() => import('~/components/templates/MinimalTemplate.vue'))
@@ -34,6 +42,7 @@ const { t } = useI18n()
 const id = route.params.id as string
 
 const resume = ref(store.getResume(id))
+const encryptionLocked = computed(() => isEncryptionEnabled() && !isUnlocked())
 const zoomPercent = ref(100)
 const saveStatus = ref<'saved' | 'saving'>('saved')
 const activeTab = ref<'editor' | 'preview'>('editor')
@@ -78,7 +87,10 @@ function refreshUndoRedo() {
   canRedoNow.value = store.canRedo(id)
 }
 
+const isCoverLetter = computed(() => resume.value?.kind === 'coverLetter')
+
 const currentTemplate = computed(() => {
+  if (isCoverLetter.value) return CoverLetterTemplate
   if (!resume.value?.templateId) return ClassicTemplate
 
   const tid = resume.value.templateId
@@ -189,7 +201,7 @@ function handleFieldUndo() {
   if (oldValue !== null) {
     fieldRedoStack.value.push(snap)
     handleUpdate()
-    toast.success(`Desfeito em ${snap.path}`)
+    toast.success(t('toast.undoField', { path: snap.path }))
   }
 }
 
@@ -200,7 +212,7 @@ function handleFieldRedo() {
   if (oldValue !== null) {
     fieldUndoStack.value.push(snap)
     handleUpdate()
-    toast.success(`Refeito em ${snap.path}`)
+    toast.success(t('toast.redoField', { path: snap.path }))
   }
 }
 
@@ -215,7 +227,7 @@ function handleKeydown(e: KeyboardEvent) {
       cancelPendingSave()
       store.updateResume(resume.value)
       markSaved()
-      toast.success(t('editor.saved'))
+      toast.success(t('toast.saved'))
     }
   }
   if (isCtrlOrCmd && e.key === 'z' && !e.shiftKey) {
@@ -288,14 +300,14 @@ const summaryWords = computed(() => (resume.value?.data.summary ?? '').trim().sp
 /** Paleta do painel de estilo: '' = accent do design system */
 const ACCENT_CHOICES: Record<string, string> = {
   '': '',
-  blue: '#4a5df9',
-  green: '#0e7a4a',
-  violet: '#7b5df9',
-  rose: '#e0447c',
-  orange: '#e07a2f',
-  teal: '#0e7a72',
-  red: '#c22f2f',
-  ink: '#17153a',
+  blue: '#2563eb',
+  green: '#16a34a',
+  violet: '#7c3aed',
+  rose: '#e11d48',
+  orange: '#ea580c',
+  teal: '#0d9488',
+  red: '#dc2626',
+  ink: '#1e1e24',
 }
 
 /* ============ Idiomas (aceita string legado ou objeto) ============ */
@@ -390,14 +402,12 @@ const sectionWordCounts = computed<Record<string, number>>(() => {
 })
 
 /* ============ F2 #14: placeholders por profissão ============ */
-const PROFESSION_PLACEHOLDERS: Record<string, { role: string; summary: string }> = {
-  dev: { role: 'Desenvolvedor Full-Stack', summary: 'Desenvolvedor com experiência em Vue, TypeScript e Node, entregando produtos web ponta a ponta.' },
-  designer: { role: 'Designer de Produto', summary: 'Designer focado em pesquisa com usuários e interfaces que equilibram negócio e usabilidade.' },
-  marketing: { role: 'Analista de Marketing Digital', summary: 'Especialista em performance, SEO e conteúdo com histórico de crescimento de receita.' },
-  admin: { role: 'Analista Administrativo', summary: 'Organização de processos, financeiro e atendimento com foco em eficiência operacional.' },
-  generic: { role: 'Cargo', summary: 'Duas linhas sobre você...' },
-}
-const professionKey = ref<keyof typeof PROFESSION_PLACEHOLDERS>('generic')
+const professionKeys = ['dev', 'designer', 'marketing', 'admin', 'generic'] as const
+type ProfessionKey = typeof professionKeys[number]
+const PROFESSION_PLACEHOLDERS = computed(() =>
+  Object.fromEntries(professionKeys.map(k => [k, { role: t(`ph.${k}Role`), summary: t(`ph.${k}Summary`) }])) as Record<ProfessionKey, { role: string; summary: string }>,
+)
+const professionKey = ref<ProfessionKey>('generic')
 function guessProfession() {
   const h = (resume.value?.data.headline ?? '').toLowerCase()
   if (/dev|program|engenh|software|front|back|full/.test(h)) return 'dev'
@@ -407,7 +417,7 @@ function guessProfession() {
   return 'generic'
 }
 watch(() => resume.value?.data.headline, () => { professionKey.value = guessProfession() }, { immediate: true })
-const ph = computed(() => PROFESSION_PLACEHOLDERS[professionKey.value])
+const ph = computed(() => PROFESSION_PLACEHOLDERS.value[professionKey.value])
 
 /** Aplica placeholders da profissão em campos ainda vazios (F2 #14) */
 function applyProfessionPlaceholders() {
@@ -434,32 +444,32 @@ watch(showVersions, (show) => {
 })
 
 function renamePrompt(version: number, current: string | null) {
-  const label = window.prompt('Nome da versão (vazio para remover):', current ?? '')
+  const label = window.prompt(t('versions.renamePrompt'), current ?? '')
   if (label === null) return
   store.renameVersion(id, version, label.trim() || null)
   versions.value = store.getVersions(id)
 }
 
 function restoreThis(version: number) {
-  if (!window.confirm(`Restaurar a versão v${version}? A versão atual fica recuperável pelo Refazer.`)) return
+  if (!window.confirm(t('versions.restoreConfirm', { v: version }))) return
   cancelPendingSave()
   if (store.restoreVersion(id, version)) {
     resume.value = store.getResume(id)
     refreshUndoRedo()
-    toast.success(`Versão v${version} restaurada`)
+    toast.success(t('toast.versionRestored', { v: version }))
   } else {
-    toast.error('Não foi possível restaurar esta versão')
+    toast.error(t('toast.versionRestoreFailed'))
   }
 }
 
 /* ============ F5: salvo-às + completude + beforeunload ============ */
 const savedAt = ref<string>('')
 
-const quality = computed(() => completeness(resume.value?.data ?? ResumeDocSchema.shape.data.parse({})))
+const quality = computed(() => completeness(resume.value?.data ?? ResumeDocSchema.shape.data.parse({}), t))
 const completenessPct = computed(() => quality.value.pct)
 const completenessChecks = computed(() => quality.value.checks)
 const completenessTitle = computed(() =>
-  completenessChecks.value.filter(c => !c.done).map(c => `• ${c.label}`).join('\n') || 'Tudo completo! 🎉'
+  completenessChecks.value.filter(c => !c.done).map(c => `• ${c.label}`).join('\n') || t('quality.allDone')
 )
 
 /** Marca mudanças não salvas para o beforeunload (zera ao salvar) */
@@ -470,9 +480,10 @@ function handleBeforeUnload(e: BeforeUnloadEvent) {
 onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', handleBeforeUnload))
 
-/* ============ F9: Score ATS contra descrição de vaga ============ */
+/* ============ F9 + v3: Score ATS persistido ============ */
 const showAts = ref(false)
-const jobDescription = ref('')
+const showPublish = ref(false)
+const jobDescription = ref(resume.value?.jobDescription ?? '')
 const atsResult = computed(() =>
   jobDescription.value.trim().length > 50 && resume.value
     ? scoreAts(resume.value.data, jobDescription.value)
@@ -482,14 +493,151 @@ const atsScore = computed(() => atsResult.value?.score ?? 0)
 const atsMissing = computed(() => atsResult.value?.missing ?? [])
 const atsMatched = computed(() => atsResult.value?.matched ?? [])
 
+/** v3: a descrição da vaga deixa de ser volátil — persiste no doc */
+watch(jobDescription, (value) => {
+  if (!resume.value) return
+  if (resume.value.jobDescription === value) return
+  resume.value.jobDescription = value
+  handleUpdate()
+})
+
+/** v3: salva a análise no histórico do currículo */
+function saveAtsAnalysis() {
+  if (!resume.value || !atsResult.value) return
+  store.recordAts(id, {
+    score: atsResult.value.score,
+    jobDescription: jobDescription.value,
+    missing: atsResult.value.missing,
+  })
+  resume.value = store.getResume(id)
+  toast.success(t('ats.saved'))
+}
+
+/** v3: sugestões de tailoring a partir do ATS */
+const suggestions = computed<TailorSuggestion[]>(() =>
+  resume.value && atsResult.value ? tailorSuggestions(resume.value.data, atsResult.value) : []
+)
+
+function applyTailorSuggestion(s: TailorSuggestion) {
+  if (!resume.value) return
+  if (applySuggestion(resume.value.data, s)) {
+    handleUpdate()
+    toast.success(t('ats.applied'))
+  }
+}
+
+/* ============ v3: linter de escrita ============ */
+const showLint = ref(false)
+const lintFindings = computed(() =>
+  resume.value ? lintResume(resume.value.data, t) : []
+)
+const lintCounts = computed(() => lintSummary(lintFindings.value))
+
+/* ============ v3: contagem de páginas ============ */
+const previewRef = ref<HTMLElement | null>(null)
+const pageCount = ref(1)
+let pageObserver: ResizeObserver | null = null
+
+/** Altura de uma folha A4 @96dpi (mesma constante de export/png.ts) */
+const A4_HEIGHT_PX = 1123
+
+function measurePages() {
+  const el = previewRef.value?.querySelector('.a4-page') as HTMLElement | null
+  if (!el) return
+  const content = el.scrollHeight
+  pageCount.value = Math.max(1, Math.ceil(content / A4_HEIGHT_PX))
+}
+
+onMounted(() => {
+  if (typeof ResizeObserver === 'undefined') return
+  pageObserver = new ResizeObserver(() => measurePages())
+  const el = previewRef.value?.querySelector('.a4-page')
+  if (el) pageObserver.observe(el)
+  measurePages()
+})
+onBeforeUnmount(() => pageObserver?.disconnect())
+
+watch(() => resume.value?.data, () => nextTick(measurePages), { deep: true })
+
+/* ============ v3: ordem das seções ============ */
+const orderedSections = computed(() => {
+  const order = resume.value?.style.sectionOrder ?? []
+  if (order.length === 0) return DEFAULT_SECTIONS
+  const byKey = new Map(DEFAULT_SECTIONS.map(s => [s.key, s]))
+  const ordered = order.map(k => byKey.get(k)).filter((s): s is typeof DEFAULT_SECTIONS[number] => Boolean(s))
+  const rest = DEFAULT_SECTIONS.filter(s => !order.includes(s.key))
+  return [...ordered, ...rest]
+})
+
+function moveSection(key: string, delta: -1 | 1) {
+  if (!resume.value) return
+  const keys = orderedSections.value.map(s => s.key)
+  const i = keys.indexOf(key)
+  const j = i + delta
+  if (i < 0 || j < 0 || j >= keys.length) return
+  ;[keys[i], keys[j]] = [keys[j]!, keys[i]!]
+  resume.value.style.sectionOrder = keys
+  handleUpdate()
+}
+
+function resetSectionOrder() {
+  if (!resume.value) return
+  resume.value.style.sectionOrder = []
+  handleUpdate()
+}
+
+/* ============ v3: carta de apresentação ============ */
+const coverLetterWords = computed(() =>
+  (resume.value?.coverLetter.body ?? '').trim().split(/\s+/).filter(Boolean).length
+)
+
+function generateCoverDraft() {
+  if (!resume.value) return
+  const body = generateCoverLetter({
+    data: resume.value.data,
+    company: resume.value.coverLetter.company,
+    role: resume.value.coverLetter.role,
+    tone: resume.value.coverLetter.tone,
+    matched: atsMatched.value,
+  })
+  if (!body) {
+    toast.error(t('toast.coverNeedsData'))
+    return
+  }
+  resume.value.coverLetter.body = body
+  handleUpdate()
+  toast.success(t('cover.generated'))
+}
+
+function createLetterFromThis() {
+  if (!resume.value) return
+  const letter = store.createCoverLetter(id)
+  toast.success(t('cover.new'))
+  router.push(`/resumes/${letter.id}`)
+}
+
+/* ============ v3: diff de versões ============ */
+const compareVersion = ref<number | null>(null)
+const comparePair = computed(() => {
+  if (compareVersion.value === null) return null
+  const target = versions.value.find(v => v.version === compareVersion.value)
+  if (!target) return null
+  const current = resume.value
+  if (!current) return null
+  return {
+    before: target,
+    after: { version: current.version, data: current.data, createdAt: current.updatedAt, label: null, note: null },
+  }
+})
+
 /** Duplicar este currículo "para a vaga X" (F9 #99) */
 function duplicateForJob() {
   if (!resume.value) return
-  const jobTitle = window.prompt('Nome da vaga (ex: "Dev Sênior na Magalu"):', resume.value.jobTitle || '')
+  const jobTitle = window.prompt(t('finding.jobTitlePrompt'), resume.value.jobTitle || '')
   if (!jobTitle?.trim()) return
   const dup = store.duplicateResume(id, jobTitle.trim())
   if (dup) {
-    toast.success(`Criado "${dup.title}"`)
+    toast.success(t('toast.duplicatedForJob', { title: dup.title }))
     router.push(`/resumes/${dup.id}`)
   }
 }
@@ -527,9 +675,9 @@ async function handleImportFile(e: Event) {
       if (extracted.education?.length) d.education = extracted.education
       handleUpdate()
     }
-    toast.success('Dados importados — revise antes de exportar')
+    toast.success(t('toast.imported'))
   } catch (err) {
-    toast.error(err instanceof Error ? err.message : 'Não foi possível importar este arquivo')
+    toast.error(err instanceof Error ? err.message : t('toast.importFailed'))
   }
   input.value = ''
 }
@@ -597,7 +745,7 @@ function runReplaceAll() {
   }
   if (total > 0) handleUpdate()
   runFind()
-  toast.success(`${total} substituição(ões) aplicada(s)`)
+  toast.success(t('toast.replaced', { n: total }))
 }
 
 watch([findQuery, matchCase], runFind)
@@ -624,7 +772,7 @@ watch(showShareModal, (open) => {
 
 async function buildProtectedLink() {
   if (!resume.value || sharePassword.value.length < 4) {
-    shareError.value = 'A senha precisa ter pelo menos 4 caracteres.'
+    shareError.value = t('share.passwordTooShort')
     return
   }
   shareError.value = ''
@@ -642,7 +790,7 @@ async function doShareLink() {
     } catch { /* cancelado pelo usuário → cai no clipboard */ }
   }
   await navigator.clipboard.writeText(shareLink.value)
-  toast.success('Link copiado!')
+  toast.success(t('toast.linkCopied'))
   showShareModal.value = false
 }
 
@@ -663,7 +811,7 @@ async function shareAsFile() {
       return
     } catch { /* cancelado */ }
   }
-  toast.error('Este navegador não suporta compartilhar arquivos')
+  toast.error(t('toast.shareUnsupported'))
 }
 
 function shareByEmail() {
@@ -674,7 +822,7 @@ function shareByEmail() {
 async function copyAsText() {
   if (!resume.value) return
   await navigator.clipboard.writeText(formattedTextForEmail(resume.value))
-  toast.success('Currículo copiado como texto')
+  toast.success(t('toast.textCopied'))
 }
 
 if (resume.value && resume.value.deletedAt) {
@@ -701,16 +849,25 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
 
 <template>
   <div v-if="!store.ready" class="flex flex-col items-center justify-center py-20 gap-3">
-    <div class="animate-spin rounded-full h-[34px] w-[34px] border-[3px] border-border border-t-secondary" role="status" aria-label="Carregando seus currículos"></div>
-    <p class="text-sm text-muted-foreground">Carregando seus currículos…</p>
+    <div class="animate-spin rounded-full h-[34px] w-[34px] border-[3px] border-border border-t-secondary" role="status" :aria-label="t('aria.loadingResumes')"></div>
+    <p class="text-sm text-muted-foreground">{{ t('common.loadingResumes') }}</p>
   </div>
 
   <div v-else-if="!resume" class="flex flex-col items-center justify-center py-20 text-center gap-3">
-    <div class="w-16 h-16 bg-destructive-soft text-destructive rounded-2xl flex items-center justify-center font-display text-2xl font-extrabold">!</div>
-    <h2 class="font-display text-xl font-bold text-foreground">Não conseguimos abrir este currículo</h2>
-    <p class="text-sm text-muted-foreground max-w-xs">Ele pode ter sido excluído.</p>
-    <Button variant="outline" as-child class="mt-2">
-      <NuxtLink to="/resumes">Voltar à lista</NuxtLink>
+    <div class="w-16 h-16 bg-destructive-soft text-destructive rounded-2xl flex items-center justify-center font-display text-2xl font-extrabold">
+      <Icon :name="encryptionLocked ? 'lucide:lock' : 'lucide:alert-triangle'" class="w-7 h-7" />
+    </div>
+    <h2 class="font-display text-xl font-bold text-foreground">
+      {{ encryptionLocked ? t('crypto.locked') : t('editor.notFound') }}
+    </h2>
+    <p class="text-sm text-muted-foreground max-w-xs">
+      {{ encryptionLocked ? t('crypto.hint') : t('editor.notFoundHint') }}
+    </p>
+    <Button v-if="encryptionLocked" variant="secondary" as-child class="mt-2">
+      <NuxtLink to="/settings">{{ t('crypto.unlock') }}</NuxtLink>
+    </Button>
+    <Button v-else variant="outline" as-child class="mt-2">
+      <NuxtLink to="/resumes">{{ t('editor.backToList') }}</NuxtLink>
     </Button>
   </div>
 
@@ -718,28 +875,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 toolbar">
       <div>
         <NuxtLink to="/resumes" class="text-xs font-bold text-primary uppercase tracking-widest hover:opacity-80 transition-opacity mb-1 inline-block">
-          &larr; Meus Currículos
+          &larr; {{ t('editor.backToListShort') }}
         </NuxtLink>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
           <Input
             v-model="resume.title"
             @input="handleUpdate"
             class="font-display text-lg font-bold bg-transparent border-transparent hover:border-border w-full md:w-auto min-w-[220px] h-auto"
-            placeholder="Nome do currículo"
-            aria-label="Título do currículo"
+            :placeholder="t('editor.titlePlaceholder')"
+            :aria-label="t('editor.titleAria')"
           />
           <Badge v-if="saveStatus === 'saving'" variant="sample" class="animate-pulse">
-            Salvando…
+            {{ t('editor.saving') }}
           </Badge>
           <Badge v-else variant="success">
-            Salvo{{ savedAt ? ` às ${savedAt}` : '' }}
+            {{ savedAt ? t('editor.savedWithTime', { time: savedAt }) : t('state.saved') }}
           </Badge>
           <Badge variant="sample" class="tabular-nums cursor-help" :title="completenessTitle">
             {{ completenessPct }}% {{ t('state.complete') }}
           </Badge>
         </div>
       </div>
-      <div class="flex items-center gap-2 bg-surface p-1 rounded-xl border border-border self-start">
+      <div class="flex flex-wrap items-center gap-2 bg-surface p-1 rounded-xl border border-border self-start max-w-full">
         <div class="flex items-center gap-1 border-r border-border pr-2 mr-2">
           <Tooltip>
             <template #trigger>
@@ -748,12 +905,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                 size="icon"
                 @click="handleUndo"
                 :disabled="!canUndoNow"
-                title="Desfazer (Ctrl+Z)"
+                :title="t('editor.undoTitle')"
               >
                 <Icon name="lucide:rotate-ccw" class="w-4 h-4" />
               </Button>
             </template>
-            <template #content>Desfazer</template>
+            <template #content>{{ t('editor.undo') }}</template>
           </Tooltip>
           <Tooltip>
             <template #trigger>
@@ -762,12 +919,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                 size="icon"
                 @click="handleRedo"
                 :disabled="!canRedoNow"
-                title="Refazer (Ctrl+Y)"
+                :title="t('editor.redoTitle')"
               >
                 <Icon name="lucide:rotate-cw" class="w-4 h-4" />
               </Button>
             </template>
-            <template #content>Refazer</template>
+            <template #content>{{ t('editor.redo') }}</template>
           </Tooltip>
         </div>
 
@@ -790,19 +947,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
           <Icon name="lucide:target" class="w-4 h-4 mr-2" />
           {{ t('editor.matchJob') }}
         </Button>
+        <Button variant="ghost" @click="showLint = !showLint" :title="t('lint.title')">
+          <Icon name="lucide:spell-check" class="w-4 h-4 mr-2" />
+          {{ t('lint.title') }}
+          <Badge v-if="lintCounts.warn" variant="destructive" class="ml-1.5 text-[10px] tabular-nums">{{ lintCounts.warn }}</Badge>
+        </Button>
+        <Button variant="ghost" @click="showPublish = !showPublish" :title="t('publish.title')">
+          <Icon name="lucide:globe" class="w-4 h-4 mr-2" />
+          {{ t('publish.title') }}
+        </Button>
         <Button variant="ghost" @click="showVersions = !showVersions">
           <Icon name="lucide:history" class="w-4 h-4 mr-2" />
           {{ t('editor.versions') }}
         </Button>
-        <Button variant="ghost" @click="showFindReplace = !showFindReplace" title="Buscar e substituir em todo o currículo">
+        <Button variant="ghost" @click="showFindReplace = !showFindReplace" :title="t('finding.findReplaceTitle')">
           <Icon name="lucide:search" class="w-4 h-4 mr-2" />
           {{ t('action.replace') }}
         </Button>
-        <Button variant="ghost" @click="duplicateForJob" title="Criar uma cópia para uma vaga específica">
+        <Button variant="ghost" @click="duplicateForJob" :title="t('finding.duplicateForJobTitle')">
           <Icon name="lucide:copy-plus" class="w-4 h-4 mr-2" />
           {{ t('editor.forJob') }}
         </Button>
-        <Button variant="ghost" @click="pickImport('pdf')" title="Importar dados de um PDF ou do LinkedIn">
+        <Button variant="ghost" @click="pickImport('pdf')" :title="t('finding.importTitle')">
           <Icon name="lucide:file-up" class="w-4 h-4 mr-2" />
           {{ t('editor.import') }}
         </Button>
@@ -823,7 +989,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
         role="alert"
       >
         <Icon name="lucide:alert-triangle" class="w-3.5 h-3.5" />
-        Há itens com campos obrigatórios vazios (cargo ou curso) — preencha ou remova antes de exportar.
+        {{ t('editor.validation') }}
       </div>
       <Button
         variant="ghost"
@@ -831,10 +997,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
         class="text-xs text-muted-foreground"
         :class="{ 'text-secondary bg-secondary/10': noExperienceMode }"
         @click="toggleNoExperience"
-        title="Modo para primeiro emprego: destaca resumo e formação, sem exigir experiência"
+        :title="t('editor.noExpTitle')"
       >
         <Icon name="lucide:sprout" class="w-3.5 h-3.5 mr-1.5" />
-        {{ noExperienceMode ? 'Modo sem experiência ativo' : 'Primeiro emprego? Ativar modo sem experiência' }}
+        {{ noExperienceMode ? t('editor.noExp.on') : t('editor.noExp.off') }}
       </Button>
       <Button
         v-if="!resume.data.headline.trim() || !resume.data.summary.trim()"
@@ -842,36 +1008,36 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
         size="sm"
         class="text-xs text-muted-foreground"
         @click="applyProfessionPlaceholders"
-        title="Preenche título e resumo com sugestões baseadas na sua profissão"
+        :title="t('editor.suggestTitle')"
       >
         <Icon name="lucide:wand-sparkles" class="w-3.5 h-3.5 mr-1.5" />
-        Sugerir texto por profissão
+        {{ t('editor.suggestText') }}
       </Button>
     </div>
 
     <!-- Busca e substituição global (F5 #67) -->
     <Card v-if="showFindReplace" class="toolbar rounded-2xl p-5 mb-8 space-y-3">
       <div class="flex items-center justify-between">
-        <h3 class="font-display text-base font-bold text-foreground">Buscar e substituir</h3>
-        <Button variant="ghost" size="icon" class="h-8 w-8" @click="showFindReplace = false" aria-label="Fechar busca">
+        <h3 class="font-display text-base font-bold text-foreground">{{ t('editor.findTitle') }}</h3>
+        <Button variant="ghost" size="icon" class="h-8 w-8" @click="showFindReplace = false" :aria-label="t('action.close')">
           <Icon name="lucide:x" class="w-4 h-4" />
         </Button>
       </div>
       <div class="grid sm:grid-cols-2 gap-3">
-        <Input v-model="findQuery" placeholder="Buscar..." aria-label="Texto a buscar" />
-        <Input v-model="replaceQuery" placeholder="Substituir por..." aria-label="Texto de substituição" />
+        <Input v-model="findQuery" :placeholder="t('find.query')" :aria-label="t('find.query')" />
+        <Input v-model="replaceQuery" :placeholder="t('find.replaceWith')" :aria-label="t('find.replaceWith')" />
       </div>
       <div class="flex flex-wrap items-center gap-4">
         <label class="flex items-center gap-2 text-xs text-muted-foreground">
           <input type="checkbox" v-model="matchCase" class="accent-secondary" />
-          Diferenciar maiúsculas
+          {{ t('editor.matchCase') }}
         </label>
         <span v-if="findMatches.length" class="text-xs text-muted-foreground">
-          {{ findMatches.reduce((n, m) => n + m.count, 0) }} ocorrência(s) em {{ findMatches.length }} campo(s)
+          {{ t('editor.matches', { n: findMatches.reduce((n, m) => n + m.count, 0), fields: findMatches.length }) }}
         </span>
         <Button variant="secondary" size="sm" :disabled="!findQuery || findMatches.length === 0" @click="runReplaceAll">
           <Icon name="lucide:replace" class="w-3.5 h-3.5 mr-1.5" />
-          Substituir tudo
+          {{ t('editor.replaceAll') }}
         </Button>
       </div>
       <div v-if="findMatches.length" class="text-[11px] text-muted-foreground">
@@ -891,7 +1057,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
         @click="activeTab = 'editor'"
       >
         <Icon name="lucide:pen-line" class="w-4 h-4 mr-2" />
-        Editar
+        {{ t('editor.tabEdit') }}
       </Button>
       <Button
         variant="ghost"
@@ -904,34 +1070,48 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
         @click="activeTab = 'preview'"
       >
         <Icon name="lucide:eye" class="w-4 h-4 mr-2" />
-        Visualizar
+        {{ t('editor.tabView') }}
       </Button>
     </div>
 
     <!-- Timeline de versões (F4) -->
     <Card v-if="showVersions" class="toolbar rounded-2xl p-5 mb-8 space-y-3">
       <div class="flex items-center justify-between">
-        <h3 class="font-display text-base font-bold text-foreground">Histórico de versões</h3>
-        <Button variant="ghost" size="icon" class="h-8 w-8" @click="showVersions = false" aria-label="Fechar histórico">
+        <h3 class="font-display text-base font-bold text-foreground">{{ t('versions.title') }}</h3>
+        <Button variant="ghost" size="icon" class="h-8 w-8" @click="showVersions = false" :aria-label="t('prefs.closeAria')">
           <Icon name="lucide:x" class="w-4 h-4" />
         </Button>
       </div>
 
       <p v-if="versions.length === 0" class="text-sm text-muted-foreground">
-        Nenhuma versão salva ainda. Cada vez que você edita, uma versão anterior é guardada aqui (até 30).
+        {{ t('versions.empty') }}
       </p>
 
       <div v-else class="divide-y divide-border-soft">
-        <div v-for="snap in versions" :key="snap.version" class="flex flex-wrap items-center gap-3 py-2.5">
-          <span class="font-display font-bold text-sm w-14 tabular-nums">v{{ snap.version }}</span>
-          <div class="flex-1 min-w-[160px]">
-            <div class="text-sm text-foreground">
-              {{ snap.label || new Date(snap.createdAt).toLocaleString('pt-BR') }}
+        <div v-for="snap in versions" :key="snap.version" class="py-2.5 space-y-2">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="font-display font-bold text-sm w-14 tabular-nums">v{{ snap.version }}</span>
+            <div class="flex-1 min-w-[160px]">
+              <div class="text-sm text-foreground">
+                {{ snap.label || new Date(snap.createdAt).toLocaleString('pt-BR') }}
+              </div>
+              <div v-if="snap.label" class="text-[11px] text-muted-foreground">{{ new Date(snap.createdAt).toLocaleString('pt-BR') }}</div>
             </div>
-            <div v-if="snap.label" class="text-[11px] text-muted-foreground">{{ new Date(snap.createdAt).toLocaleString('pt-BR') }}</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              @click="compareVersion = compareVersion === snap.version ? null : snap.version"
+            >
+              {{ compareVersion === snap.version ? t('diff.stopCompare') : t('diff.compare') }}
+            </Button>
+            <Button variant="ghost" size="sm" @click="renamePrompt(snap.version, snap.label)">{{ t('versions.rename') }}</Button>
+            <Button variant="outline" size="sm" @click="restoreThis(snap.version)">{{ t('action.restore') }}</Button>
           </div>
-          <Button variant="ghost" size="sm" @click="renamePrompt(snap.version, snap.label)">Renomear</Button>
-          <Button variant="outline" size="sm" @click="restoreThis(snap.version)">Restaurar</Button>
+          <VersionDiff
+            v-if="compareVersion === snap.version && comparePair"
+            :before="comparePair.before"
+            :after="comparePair.after"
+          />
         </div>
       </div>
     </Card>
@@ -940,15 +1120,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
     <Card v-if="showAts" class="toolbar rounded-2xl p-5 mb-8 space-y-4">
       <div class="flex items-center justify-between">
         <div>
-          <h3 class="font-display text-base font-bold text-foreground">Compatibilidade com a vaga</h3>
-          <p class="text-xs text-muted-foreground">Cole a descrição da vaga. A análise roda no seu aparelho — nada é enviado.</p>
+          <h3 class="font-display text-base font-bold text-foreground">{{ t('ats.title') }}</h3>
+          <p class="text-xs text-muted-foreground">{{ t('ats.subtitle') }}</p>
         </div>
-        <Button variant="ghost" size="icon" class="h-8 w-8" @click="showAts = false" aria-label="Fechar análise">
+        <Button variant="ghost" size="icon" class="h-8 w-8" @click="showAts = false" :aria-label="t('ats.closeAria')">
           <Icon name="lucide:x" class="w-4 h-4" />
         </Button>
       </div>
 
-      <Textarea v-model="jobDescription" placeholder="Cole aqui a descrição da vaga..." class="min-h-[120px] resize-none" />
+      <Textarea v-model="jobDescription" :placeholder="t('ats.placeholder')" class="min-h-[120px] resize-none" />
 
       <div v-if="jobDescription.trim().length > 50" class="space-y-3">
         <div class="flex items-center gap-4">
@@ -965,19 +1145,123 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
         </div>
 
         <div v-if="atsMissing.length" class="space-y-1.5">
-          <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Palavras-chave que faltam</p>
+          <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">{{ t('ats.keywordsMissing') }}</p>
           <div class="flex flex-wrap gap-1.5">
             <Badge v-for="kw in atsMissing.slice(0, 15)" :key="kw" variant="destructive" class="text-[11px]">{{ kw }}</Badge>
           </div>
-          <p class="text-[11px] text-muted-foreground">Se você tem essa experiência, inclua com as mesmas palavras da vaga.</p>
+          <p class="text-[11px] text-muted-foreground">{{ t('ats.hint') }}</p>
         </div>
 
         <div v-if="atsMatched.length" class="space-y-1.5">
-          <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Encontradas no currículo</p>
+          <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">{{ t('ats.keywordsFound') }}</p>
           <div class="flex flex-wrap gap-1.5">
             <Badge v-for="kw in atsMatched.slice(0, 15)" :key="kw" variant="success" class="text-[11px]">{{ kw }}</Badge>
           </div>
         </div>
+
+        <!-- v3: sugestões de tailoring -->
+        <div v-if="suggestions.length" class="space-y-1.5">
+          <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">{{ t('ats.tailor') }}</p>
+          <div class="space-y-1.5">
+            <div
+              v-for="s in suggestions"
+              :key="s.id"
+              class="flex flex-wrap items-center gap-2 rounded-lg border border-border-soft bg-surface/60 px-3 py-2"
+            >
+              <div class="flex-1 min-w-[180px]">
+                <div class="text-xs font-semibold text-foreground">{{ s.label }}</div>
+                <div class="text-[11px] text-muted-foreground">{{ s.detail }}</div>
+              </div>
+              <Button variant="outline" size="sm" class="h-7 text-[11px]" @click="applyTailorSuggestion(s)">
+                {{ t('ats.apply') }}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" size="sm" @click="saveAtsAnalysis">
+            <Icon name="lucide:save" class="w-3.5 h-3.5 mr-1.5" />
+            {{ t('ats.save') }}
+          </Button>
+          <span v-if="resume.atsHistory.length" class="text-[11px] text-muted-foreground">
+            {{ t('ats.history') }}: {{ resume.atsHistory.length }}
+          </span>
+        </div>
+
+        <div v-if="resume.atsHistory.length" class="space-y-1">
+          <div
+            v-for="entry in resume.atsHistory.slice(0, 5)"
+            :key="entry.at"
+            class="flex items-center gap-2 text-[11px] text-muted-foreground"
+          >
+            <span class="tabular-nums font-bold" :class="entry.score >= 60 ? 'text-success' : entry.score >= 30 ? 'text-primary' : 'text-destructive'">{{ entry.score }}%</span>
+            <span>{{ new Date(entry.at).toLocaleString('pt-BR') }}</span>
+            <span class="truncate flex-1">{{ entry.missing.slice(0, 4).join(', ') }}</span>
+          </div>
+        </div>
+      </div>
+    </Card>
+
+    <!-- v3: publicação pública e links curtos -->
+    <Card v-if="showPublish" class="toolbar rounded-2xl p-5 mb-8 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="font-display text-base font-bold text-foreground">{{ t('publish.title') }}</h3>
+        <Button variant="ghost" size="icon" class="h-8 w-8" :aria-label="t('action.close')" @click="showPublish = false">
+          <Icon name="lucide:x" class="w-4 h-4" />
+        </Button>
+      </div>
+      <PublishPanel :doc="resume" />
+    </Card>
+
+    <!-- v3: revisão de escrita -->
+    <Card v-if="showLint" class="toolbar rounded-2xl p-5 mb-8">
+      <LintPanel :findings="lintFindings" @close="showLint = false" />
+    </Card>
+
+    <!-- v3: carta de apresentação -->
+    <Card v-if="isCoverLetter" class="toolbar rounded-2xl p-5 mb-8 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-display text-base font-bold text-foreground">{{ t('cover.title') }}</h3>
+        <span class="text-[11px] text-muted-foreground tabular-nums">{{ t('cover.words', { n: coverLetterWords }) }}</span>
+      </div>
+      <div class="grid sm:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-muted-foreground mb-1.5">{{ t('cover.company') }}</label>
+          <Input v-model="resume.coverLetter.company" @input="handleUpdate" :placeholder="t('field.company')" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-muted-foreground mb-1.5">{{ t('cover.role') }}</label>
+          <Input v-model="resume.coverLetter.role" @input="handleUpdate" :placeholder="t('field.role')" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-muted-foreground mb-1.5">{{ t('cover.tone') }}</label>
+          <select
+            :value="resume.coverLetter.tone"
+            class="flex h-[46px] w-full rounded-md border border-input bg-card px-3 text-sm"
+            @change="resume.coverLetter.tone = ($event.target as HTMLSelectElement).value as any; handleUpdate()"
+          >
+            <option value="formal">{{ t('cover.tone.formal') }}</option>
+            <option value="direto">{{ t('cover.tone.direto') }}</option>
+            <option value="caloroso">{{ t('cover.tone.caloroso') }}</option>
+          </select>
+        </div>
+      </div>
+      <Textarea
+        v-model="resume.coverLetter.body"
+        @input="handleUpdate"
+        :placeholder="t('cover.placeholder')"
+        class="min-h-[220px] resize-y"
+      />
+      <div class="flex flex-wrap gap-2">
+        <Button variant="secondary" size="sm" @click="generateCoverDraft">
+          <Icon name="lucide:wand-sparkles" class="w-3.5 h-3.5 mr-1.5" />
+          {{ t('cover.generate') }}
+        </Button>
+        <Button variant="outline" size="sm" @click="createLetterFromThis">
+          <Icon name="lucide:mail-plus" class="w-3.5 h-3.5 mr-1.5" />
+          {{ t('cover.fromResume') }}
+        </Button>
       </div>
     </Card>
 
@@ -985,13 +1269,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
     <div :class="previewLayout === 'below' ? 'flex flex-col gap-8 items-start' : 'grid gap-10 lg:grid-cols-[480px_1fr] items-start'">
       <div 
         :class="[
-          'editor-column space-y-4 pb-20',
+          'editor-column min-w-0 space-y-4 pb-20',
           activeTab === 'editor' ? 'block' : 'hidden lg:block'
         ]"
         @focusin="handleFieldFocus"
         @focusout="handleFieldBlur"
       >
-            <Card v-for="section in DEFAULT_SECTIONS" :key="section.key" class="rounded-2xl overflow-hidden">
+            <Card v-for="(section, si) in orderedSections" :key="section.key" class="rounded-2xl overflow-hidden">
               <div
                 class="flex items-center justify-between p-4 px-5 cursor-pointer hover:bg-surface transition-colors"
                 @click="toggleSection(section.key)"
@@ -1005,55 +1289,79 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                   <span
                     v-if="(sectionWordCounts[section.key] ?? 0) > 0"
                     class="text-[10px] tabular-nums text-muted-foreground bg-surface rounded-full px-2 py-0.5"
-                    :title="`${sectionWordCounts[section.key] ?? 0} palavras nesta seção`"
-                  >{{ sectionWordCounts[section.key] ?? 0 }} palavras</span>
+                    :title="t('editor.sectionWords', { n: sectionWordCounts[section.key] ?? 0 })"
+                  >{{ t('common.words', { n: sectionWordCounts[section.key] ?? 0 }) }}</span>
                 </div>
-                <Icon
-                  :name="'lucide:chevron-down'"
-                  class="w-4 h-4 text-muted-foreground transition-transform"
-                  :class="{ '-rotate-90': !isSectionOpen(section.key) }"
-                />
+                <div class="flex items-center gap-0.5">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 text-muted-foreground"
+                    :disabled="si === 0"
+                    :aria-label="t('sections.moveUp')"
+                    :title="t('sections.moveUp')"
+                    @click.stop="moveSection(section.key, -1)"
+                  >
+                    <Icon name="lucide:arrow-up" class="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 text-muted-foreground"
+                    :disabled="si === orderedSections.length - 1"
+                    :aria-label="t('sections.moveDown')"
+                    :title="t('sections.moveDown')"
+                    @click.stop="moveSection(section.key, 1)"
+                  >
+                    <Icon name="lucide:arrow-down" class="w-3.5 h-3.5" />
+                  </Button>
+                  <Icon
+                    :name="'lucide:chevron-down'"
+                    class="w-4 h-4 text-muted-foreground transition-transform ml-1"
+                    :class="{ '-rotate-90': !isSectionOpen(section.key) }"
+                  />
+                </div>
               </div>
 
               <div v-if="isSectionOpen(section.key)" class="px-6 pb-6">
                 <template v-if="section.key === 'personal'">
                   <div class="space-y-5">
                     <div class="group">
-                      <label class="block text-xs font-bold text-muted-foreground mb-1.5 group-focus-within:text-secondary transition-colors">Nome</label>
+                      <label class="block text-xs font-bold text-muted-foreground mb-1.5 group-focus-within:text-secondary transition-colors">{{ t('field.name') }}</label>
                       <Input
                         v-model="resume.data.name"
                         @input="handleUpdate"
-                        placeholder="Seu nome"
+                        :placeholder="t('field.namePlaceholder')"
                         inputmode="text"
                       />
                     </div>
                     <div class="group">
-                      <label class="block text-xs font-bold text-muted-foreground mb-1.5 group-focus-within:text-secondary transition-colors">Título</label>
+                      <label class="block text-xs font-bold text-muted-foreground mb-1.5 group-focus-within:text-secondary transition-colors">{{ t('field.headline') }}</label>
                       <Input
                         v-model="resume.data.headline"
                         @input="handleUpdate"
-                        placeholder="Ex: Designer de produto"
+                        :placeholder="t('field.headlinePlaceholder')"
                         inputmode="text"
                       />
                     </div>
                     <div class="group">
                       <div class="flex items-baseline justify-between mb-1.5">
-                        <label class="block text-xs font-bold text-muted-foreground group-focus-within:text-secondary transition-colors">Resumo</label>
-                        <span class="text-[10px] tabular-nums" :class="summaryWords > 120 ? 'text-destructive' : 'text-muted-foreground'">{{ summaryWords }} palavras</span>
+                        <label class="block text-xs font-bold text-muted-foreground group-focus-within:text-secondary transition-colors">{{ t('field.summary') }}</label>
+                        <span class="text-[10px] tabular-nums" :class="summaryWords > 120 ? 'text-destructive' : 'text-muted-foreground'">{{ t('common.words', { n: summaryWords }) }}</span>
                       </div>
                       <Textarea
                         v-model="resume.data.summary"
                         @input="handleUpdate"
-                        placeholder="Duas linhas sobre você..."
+                        :placeholder="t('field.summaryPlaceholder')"
                         class="resize-none"
                       />
                     </div>
                     <div class="group">
-                      <label class="block text-xs font-bold text-muted-foreground mb-1.5 group-focus-within:text-secondary transition-colors">Localização</label>
+                      <label class="block text-xs font-bold text-muted-foreground mb-1.5 group-focus-within:text-secondary transition-colors">{{ t('field.location') }}</label>
                       <Input
                         v-model="resume.data.location"
                         @input="handleUpdate"
-                        placeholder="Cidade, UF"
+                        :placeholder="t('field.locationPlaceholder')"
                         inputmode="text"
                       />
                     </div>
@@ -1065,22 +1373,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                           @change="resume.data.showOptionalBR = !resume.data.showOptionalBR; handleUpdate()"
                           class="accent-secondary w-4 h-4"
                         />
-                        <span class="text-sm font-semibold text-foreground">Campos opcionais (BR)</span>
+                        <span class="text-sm font-semibold text-foreground">{{ t('field.optionalBR') }}</span>
                       </label>
                       <template v-if="resume.data.showOptionalBR">
                         <div class="grid grid-cols-2 gap-3">
                           <div>
-                            <label class="block text-xs font-bold text-muted-foreground mb-1.5">Data de nascimento</label>
+                            <label class="block text-xs font-bold text-muted-foreground mb-1.5">{{ t('field.birthDate') }}</label>
                             <Input v-model="resume.data.birthDate" @input="handleUpdate" placeholder="00/00/0000" />
                           </div>
                           <div>
-                            <label class="block text-xs font-bold text-muted-foreground mb-1.5">Estado civil</label>
-                            <Input v-model="resume.data.maritalStatus" @input="handleUpdate" placeholder="Solteiro(a)..." />
+                            <label class="block text-xs font-bold text-muted-foreground mb-1.5">{{ t('field.maritalStatus') }}</label>
+                            <Input v-model="resume.data.maritalStatus" @input="handleUpdate" :placeholder="t('field.maritalPlaceholder')" />
                           </div>
                         </div>
                         <div>
-                          <label class="block text-xs font-bold text-muted-foreground mb-1.5">Pretensão salarial</label>
-                          <Input v-model="resume.data.salaryExpectation" @input="handleUpdate" placeholder="R$ X.XXX,XX" />
+                          <label class="block text-xs font-bold text-muted-foreground mb-1.5">{{ t('field.salary') }}</label>
+                          <Input v-model="resume.data.salaryExpectation" @input="handleUpdate" :placeholder="t('field.salaryPlaceholder')" />
                         </div>
                       </template>
                     </div>
@@ -1091,22 +1399,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                   <div class="space-y-4">
                     <Card v-for="(exp, i) in (resume.data.experiences || [])" :key="i" class="p-4 bg-card space-y-3 rounded-md border-border-soft">
                       <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-muted-foreground">Experiência {{ Number(i) + 1 }}</span>
+                        <span class="text-xs font-bold text-muted-foreground">{{ t('section.experienceN', { n: Number(i) + 1 }) }}</span>
                         <div class="flex gap-0.5">
-                          <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="duplicateArrayItem('experiences', Number(i))" aria-label="Duplicar experiência" title="Duplicar">
+                          <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="duplicateArrayItem('experiences', Number(i))" :aria-label="t('aria.duplicateExperience')" :title="t('finding.duplicate')">
                             <Icon name="lucide:copy" class="w-3.5 h-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:bg-destructive-soft" @click="removeArrayItem('experiences', Number(i))" aria-label="Remover experiência">
+                          <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:bg-destructive-soft" @click="removeArrayItem('experiences', Number(i))" :aria-label="t('aria.removeExperience')">
                             <Icon name="lucide:trash-2" class="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </div>
                       <div class="grid grid-cols-2 gap-3">
-                        <Input v-model="exp.role" @input="handleUpdate" placeholder="Cargo" inputmode="text" />
-                        <Input v-model="exp.company" @input="handleUpdate" placeholder="Empresa" inputmode="text" />
+                        <Input v-model="exp.role" @input="handleUpdate" :placeholder="t('field.role')" inputmode="text" />
+                        <Input v-model="exp.company" @input="handleUpdate" :placeholder="t('field.company')" inputmode="text" />
                       </div>
-                      <Input v-model="exp.period" @input="handleUpdate" placeholder="Período (ex: 2022 — atual)" inputmode="text" />
-                      <Textarea v-model="exp.description" @input="handleUpdate" placeholder="O que você fez lá..." class="resize-none" />
+                      <Input v-model="exp.period" @input="handleUpdate" :placeholder="t('finding.periodPlaceholder')" inputmode="text" />
+                      <Textarea v-model="exp.description" @input="handleUpdate" :placeholder="t('editor.bulletsPlaceholder')" class="resize-none" />
                     </Card>
                     <Button
                       variant="outline"
@@ -1114,7 +1422,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                       @click="addArrayItem('experiences', { role: '', company: '', period: '', description: '' })"
                     >
                       <Icon name="lucide:plus" class="w-4 h-4 mr-2" />
-                      Adicionar Experiência
+                      {{ t('section.addExperience') }}
                     </Button>
                   </div>
                 </template>
@@ -1123,19 +1431,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                   <div class="space-y-4">
                     <Card v-for="(edu, i) in (resume.data.education || [])" :key="i" class="p-4 bg-card space-y-3 rounded-md border-border-soft">
                       <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-muted-foreground">Formação {{ Number(i) + 1 }}</span>
+                        <span class="text-xs font-bold text-muted-foreground">{{ t('section.educationN', { n: Number(i) + 1 }) }}</span>
                         <div class="flex gap-0.5">
-                          <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="duplicateArrayItem('education', Number(i))" aria-label="Duplicar formação" title="Duplicar">
+                          <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="duplicateArrayItem('education', Number(i))" :aria-label="t('aria.duplicateEducation')" :title="t('finding.duplicate')">
                             <Icon name="lucide:copy" class="w-3.5 h-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:bg-destructive-soft" @click="removeArrayItem('education', Number(i))" aria-label="Remover formação">
+                          <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:bg-destructive-soft" @click="removeArrayItem('education', Number(i))" :aria-label="t('aria.removeEducation')">
                             <Icon name="lucide:trash-2" class="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </div>
                       <div class="grid grid-cols-2 gap-3">
-                        <Input v-model="edu.course" @input="handleUpdate" placeholder="Curso" inputmode="text" />
-                        <Input v-model="edu.institution" @input="handleUpdate" placeholder="Instituição" inputmode="text" />
+                        <Input v-model="edu.course" @input="handleUpdate" :placeholder="t('field.course')" inputmode="text" />
+                        <Input v-model="edu.institution" @input="handleUpdate" :placeholder="t('field.institution')" inputmode="text" />
                       </div>
                     </Card>
                     <Button
@@ -1144,7 +1452,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                       @click="addArrayItem('education', { course: '', institution: '' })"
                     >
                       <Icon name="lucide:plus" class="w-4 h-4 mr-2" />
-                      Adicionar Formação
+                      {{ t('section.addEducation') }}
                     </Button>
                   </div>
                 </template>
@@ -1155,7 +1463,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                       <Input
                         v-model="resume.data.skills[i]"
                         @input="handleUpdate"
-                        placeholder="Habilidade"
+                        :placeholder="t('field.skillPlaceholder')"
                         inputmode="text"
                         class="flex-1"
                       />
@@ -1169,7 +1477,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                       @click="addArrayItem('skills', '')"
                     >
                       <Icon name="lucide:plus" class="w-4 h-4 mr-2" />
-                      Adicionar Habilidade
+                      {{ t('section.addSkill') }}
                     </Button>
                   </div>
                 </template>
@@ -1179,7 +1487,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                   <div class="space-y-3">
                     <Card v-for="(link, i) in (resume.data.links || [])" :key="i" class="p-4 bg-card space-y-3 rounded-md border-border-soft">
                       <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-muted-foreground">Link {{ Number(i) + 1 }}</span>
+                        <span class="text-xs font-bold text-muted-foreground">{{ t('section.linkN', { n: Number(i) + 1 }) }}</span>
                         <div class="flex gap-1">
                           <Button v-if="Number(i) > 0" variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground" @click="moveArrayItem('links', Number(i), -1)" aria-label="Mover para cima">
                             <Icon name="lucide:arrow-up" class="w-3.5 h-3.5" />
@@ -1187,7 +1495,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                           <Button v-if="Number(i) < (resume.data.links?.length ?? 1) - 1" variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground" @click="moveArrayItem('links', Number(i), 1)" aria-label="Mover para baixo">
                             <Icon name="lucide:arrow-down" class="w-3.5 h-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="duplicateArrayItem('links', Number(i))" aria-label="Duplicar item" title="Duplicar">
+                          <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="duplicateArrayItem('links', Number(i))" :aria-label="t('aria.duplicateItem')" :title="t('finding.duplicate')">
                             <Icon name="lucide:copy" class="w-3.5 h-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:bg-destructive-soft" @click="removeArrayItem('links', Number(i))">
@@ -1196,23 +1504,23 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                         </div>
                       </div>
                       <div class="grid grid-cols-2 gap-3">
-                        <Input v-model="link.label" @input="handleUpdate" placeholder="Rótulo (ex: LinkedIn)" />
+                        <Input v-model="link.label" @input="handleUpdate" :placeholder="t('field.linkLabel')" />
                         <select
                           :value="link.kind"
                           @change="link.kind = ($event.target as HTMLSelectElement).value as any; handleUpdate()"
                           class="flex h-[46px] w-full rounded-md border border-input bg-card px-3.5 text-sm"
                         >
-                          <option value="linkedin">LinkedIn</option>
-                          <option value="github">GitHub</option>
-                          <option value="portfolio">Portfólio</option>
-                          <option value="other">Outro</option>
+                          <option value="linkedin">{{ t('links.linkedin') }}</option>
+                          <option value="github">{{ t('links.github') }}</option>
+                          <option value="portfolio">{{ t('links.portfolio') }}</option>
+                          <option value="other">{{ t('links.other') }}</option>
                         </select>
                       </div>
-                      <Input v-model="link.url" @input="handleUpdate" placeholder="https://..." inputmode="url" />
+                      <Input v-model="link.url" @input="handleUpdate" :placeholder="t('field.linkUrl')" inputmode="url" />
                     </Card>
                     <Button variant="outline" class="w-full h-10 border-2 border-dashed rounded-xl text-muted-foreground hover:text-primary hover:border-primary/50" @click="addArrayItem('links', { label: '', url: '', kind: 'other' })">
                       <Icon name="lucide:plus" class="w-4 h-4 mr-2" />
-                      Adicionar Link
+                      {{ t('section.addLink') }}
                     </Button>
                   </div>
                 </template>
@@ -1222,7 +1530,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                   <div class="space-y-3">
                     <Card v-for="(proj, i) in (resume.data.projects || [])" :key="i" class="p-4 bg-card space-y-3 rounded-md border-border-soft">
                       <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-muted-foreground">Projeto {{ Number(i) + 1 }}</span>
+                        <span class="text-xs font-bold text-muted-foreground">{{ t('section.projectN', { n: Number(i) + 1 }) }}</span>
                         <div class="flex gap-1">
                           <Button v-if="Number(i) > 0" variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground" @click="moveArrayItem('projects', Number(i), -1)" aria-label="Mover para cima">
                             <Icon name="lucide:arrow-up" class="w-3.5 h-3.5" />
@@ -1230,7 +1538,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                           <Button v-if="Number(i) < (resume.data.projects?.length ?? 1) - 1" variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground" @click="moveArrayItem('projects', Number(i), 1)" aria-label="Mover para baixo">
                             <Icon name="lucide:arrow-down" class="w-3.5 h-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="duplicateArrayItem('projects', Number(i))" aria-label="Duplicar item" title="Duplicar">
+                          <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="duplicateArrayItem('projects', Number(i))" :aria-label="t('aria.duplicateItem')" :title="t('finding.duplicate')">
                             <Icon name="lucide:copy" class="w-3.5 h-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:bg-destructive-soft" @click="removeArrayItem('projects', Number(i))">
@@ -1239,15 +1547,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                         </div>
                       </div>
                       <div class="grid grid-cols-2 gap-3">
-                        <Input v-model="proj.name" @input="handleUpdate" placeholder="Nome do projeto" />
-                        <Input v-model="proj.url" @input="handleUpdate" placeholder="https://..." inputmode="url" />
+                        <Input v-model="proj.name" @input="handleUpdate" :placeholder="t('field.projectName')" />
+                        <Input v-model="proj.url" @input="handleUpdate" :placeholder="t('field.linkUrl')" inputmode="url" />
                       </div>
-                      <Input v-model="proj.stack" @input="handleUpdate" placeholder="Tecnologias (ex: Vue, TypeScript)" />
-                      <Textarea v-model="proj.description" @input="handleUpdate" placeholder="O que você construiu..." class="resize-none min-h-[70px]" />
+                      <Input v-model="proj.stack" @input="handleUpdate" :placeholder="t('field.stack')" />
+                      <Textarea v-model="proj.description" @input="handleUpdate" :placeholder="t('field.projectDesc')" class="resize-none min-h-[70px]" />
                     </Card>
                     <Button variant="outline" class="w-full h-10 border-2 border-dashed rounded-xl text-muted-foreground hover:text-primary hover:border-primary/50" @click="addArrayItem('projects', { name: '', url: '', description: '', stack: '' })">
                       <Icon name="lucide:plus" class="w-4 h-4 mr-2" />
-                      Adicionar Projeto
+                      {{ t('section.addProject') }}
                     </Button>
                   </div>
                 </template>
@@ -1257,23 +1565,23 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                   <div class="space-y-3">
                     <Card v-for="(cert, i) in (resume.data.certifications || [])" :key="i" class="p-4 bg-card space-y-3 rounded-md border-border-soft">
                       <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-muted-foreground">Certificação {{ Number(i) + 1 }}</span>
-                        <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="duplicateArrayItem('certifications', Number(i))" aria-label="Duplicar item" title="Duplicar">
+                        <span class="text-xs font-bold text-muted-foreground">{{ t('section.certificationN', { n: Number(i) + 1 }) }}</span>
+                        <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="duplicateArrayItem('certifications', Number(i))" :aria-label="t('aria.duplicateItem')" :title="t('finding.duplicate')">
                             <Icon name="lucide:copy" class="w-3.5 h-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:bg-destructive-soft" @click="removeArrayItem('certifications', Number(i))">
                           <Icon name="lucide:x" class="w-3.5 h-3.5" />
                         </Button>
                       </div>
-                      <Input v-model="cert.name" @input="handleUpdate" placeholder="Nome (ex: AWS Certified)" />
+                      <Input v-model="cert.name" @input="handleUpdate" :placeholder="t('field.certName')" />
                       <div class="grid grid-cols-2 gap-3">
-                        <Input v-model="cert.issuer" @input="handleUpdate" placeholder="Emissor" />
-                        <Input v-model="cert.year" @input="handleUpdate" placeholder="Ano" inputmode="numeric" />
+                        <Input v-model="cert.issuer" @input="handleUpdate" :placeholder="t('field.issuer')" />
+                        <Input v-model="cert.year" @input="handleUpdate" :placeholder="t('field.year')" inputmode="numeric" />
                       </div>
                     </Card>
                     <Button variant="outline" class="w-full h-10 border-2 border-dashed rounded-xl text-muted-foreground hover:text-primary hover:border-primary/50" @click="addArrayItem('certifications', { name: '', issuer: '', year: '' })">
                       <Icon name="lucide:plus" class="w-4 h-4 mr-2" />
-                      Adicionar Certificação
+                      {{ t('section.addCertification') }}
                     </Button>
                   </div>
                 </template>
@@ -1285,7 +1593,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                       <Input
                         :model-value="typeof lang === 'string' ? lang : `${lang.name} (${lang.level})`"
                         @update:model-value="(v) => { if (resume) { const parsed = parseLanguage(String(v)); resume.data.languages[i] = typeof resume.data.languages[i] === 'string' ? String(v) : parsed; handleUpdate(); } }"
-                        placeholder="Inglês (B2)"
+                        :placeholder="t('field.languagePlaceholder')"
                         class="flex-1"
                       />
                       <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:bg-destructive-soft" @click="removeLanguage(Number(i))">
@@ -1294,7 +1602,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                     </div>
                     <Button variant="outline" class="w-full h-10 border-2 border-dashed rounded-xl text-muted-foreground hover:text-primary hover:border-primary/50" @click="addLanguage">
                       <Icon name="lucide:plus" class="w-4 h-4 mr-2" />
-                      Adicionar Idioma
+                      {{ t('section.addLanguage') }}
                     </Button>
                   </div>
                 </template>
@@ -1304,8 +1612,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                   <div class="space-y-3">
                     <Card v-for="(vol, i) in (resume.data.volunteer || [])" :key="i" class="p-4 bg-card space-y-3 rounded-md border-border-soft">
                       <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-muted-foreground">Voluntariado {{ Number(i) + 1 }}</span>
-                        <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="duplicateArrayItem('volunteer', Number(i))" aria-label="Duplicar item" title="Duplicar">
+                        <span class="text-xs font-bold text-muted-foreground">{{ t('section.volunteerN', { n: Number(i) + 1 }) }}</span>
+                        <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" @click="duplicateArrayItem('volunteer', Number(i))" :aria-label="t('aria.duplicateItem')" :title="t('finding.duplicate')">
                             <Icon name="lucide:copy" class="w-3.5 h-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:bg-destructive-soft" @click="removeArrayItem('volunteer', Number(i))">
@@ -1313,15 +1621,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                         </Button>
                       </div>
                       <div class="grid grid-cols-2 gap-3">
-                        <Input v-model="vol.role" @input="handleUpdate" placeholder="Função" />
-                        <Input v-model="vol.org" @input="handleUpdate" placeholder="Organização" />
+                        <Input v-model="vol.role" @input="handleUpdate" :placeholder="t('field.volunteerRole')" />
+                        <Input v-model="vol.org" @input="handleUpdate" :placeholder="t('field.org')" />
                       </div>
-                      <Input v-model="vol.period" @input="handleUpdate" placeholder="Período (ex: 2022 — 2023)" />
-                      <Textarea v-model="vol.description" @input="handleUpdate" placeholder="O que você fez..." class="resize-none min-h-[70px]" />
+                      <Input v-model="vol.period" @input="handleUpdate" :placeholder="t('field.period')" />
+                      <Textarea v-model="vol.description" @input="handleUpdate" :placeholder="t('field.volunteerDesc')" class="resize-none min-h-[70px]" />
                     </Card>
                     <Button variant="outline" class="w-full h-10 border-2 border-dashed rounded-xl text-muted-foreground hover:text-primary hover:border-primary/50" @click="addArrayItem('volunteer', { role: '', org: '', period: '', description: '' })">
                       <Icon name="lucide:plus" class="w-4 h-4 mr-2" />
-                      Adicionar Voluntariado
+                      {{ t('section.addVolunteer') }}
                     </Button>
                   </div>
                 </template>
@@ -1330,6 +1638,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
       </div>
 
       <div 
+        ref="previewRef"
         :class="[
           'relative preview-container',
           previewLayout === 'below' ? 'w-full mt-8' : 'min-h-[800px]',
@@ -1340,7 +1649,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
         <div class="sticky top-24 space-y-4">
           <div class="rounded-3xl bg-surface border border-border-soft p-5 grid justify-items-center gap-4 overflow-hidden">
             <div class="flex items-center gap-3 w-full max-w-[360px]">
-              <label for="zoom" class="text-sm font-bold text-foreground">Zoom</label>
+              <label for="zoom" class="text-sm font-bold text-foreground">{{ t('preview.zoom') }}</label>
               <input
                 id="zoom"
                 type="range"
@@ -1356,8 +1665,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                 size="icon"
                 class="h-8 w-8"
                 @click="togglePreviewFullscreen"
-                :title="isPreviewFullscreen ? 'Sair da tela cheia (Esc)' : 'Preview em tela cheia'"
-                :aria-label="isPreviewFullscreen ? 'Sair da tela cheia' : 'Preview em tela cheia'"
+                :title="isPreviewFullscreen ? t('preview.exitFullscreen') : t('preview.fullscreen')"
+                :aria-label="isPreviewFullscreen ? t('preview.exitFullscreen') : t('preview.fullscreen')"
               >
                 <Icon :name="isPreviewFullscreen ? 'lucide:minimize-2' : 'lucide:maximize-2'" class="w-4 h-4" />
               </Button>
@@ -1366,8 +1675,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                 size="icon"
                 class="h-8 w-8 hidden lg:grid"
                 @click="previewLayout = previewLayout === 'side' ? 'below' : 'side'"
-                :title="previewLayout === 'side' ? 'Mover preview para baixo' : 'Preview ao lado'"
-                :aria-label="previewLayout === 'side' ? 'Layout: preview abaixo' : 'Layout: preview ao lado'"
+                :title="previewLayout === 'side' ? t('preview.layoutBelow') : t('preview.layoutSide')"
+                :aria-label="previewLayout === 'side' ? t('preview.layoutBelow') : t('preview.layoutSide')"
               >
                 <Icon :name="previewLayout === 'side' ? 'lucide:panel-bottom' : 'lucide:panel-right'" class="w-4 h-4" />
               </Button>
@@ -1379,61 +1688,72 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
                 class="transition-transform duration-200 scale-zoom"
               >
                 <StyledA4 :doc="resume">
-                  <component :is="currentTemplate" :data="resume.data" />
+                  <!-- Carta consome o doc inteiro; templates de CV consomem só ResumeData -->
+                  <component v-if="isCoverLetter" :is="currentTemplate" :doc="resume" />
+                  <component v-else :is="currentTemplate" :data="resume.data" />
                 </StyledA4>
               </div>
             </div>
           </div>
-          <p class="text-center text-xs text-muted-foreground -mt-2">Visualização em tempo real — é assim que a empresa vai receber</p>
+          <div class="flex flex-wrap items-center justify-center gap-2 -mt-2">
+            <p class="text-center text-xs text-muted-foreground">{{ t('preview.realtime') }}</p>
+            <Badge
+              :variant="pageCount > 1 ? 'destructive' : 'success'"
+              class="text-[10px] tabular-nums"
+              :title="pageCount > 1 ? t('pages.overflow', { n: pageCount }) : t('pages.fits')"
+            >
+              {{ t('pages.count', { n: pageCount }) }}
+            </Badge>
+          </div>
 
           <!-- Painel de estilo por doc (F3) -->
           <div class="rounded-3xl bg-card border border-border-soft p-5 space-y-4">
-            <h3 class="font-display text-sm font-bold text-foreground">Estilo do currículo</h3>
+            <h3 class="font-display text-sm font-bold text-foreground">{{ t('style.title') }}</h3>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-bold text-muted-foreground mb-1.5">Cor de destaque</label>
+                <label class="block text-xs font-bold text-muted-foreground mb-1.5">{{ t('style.accent') }}</label>
                 <div class="flex gap-1.5 flex-wrap">
                   <button
                     v-for="(hex, key) in ACCENT_CHOICES"
                     :key="key"
                     class="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
                     :class="resume.style.accentColor === key ? 'border-foreground scale-110' : 'border-transparent'"
-                    :style="{ background: hex || 'linear-gradient(135deg,#ffd02f,#fff)' }"
-                    :aria-label="`Cor ${key || 'padrão'}`"
+                    :style="{ background: hex || '#ea580c' }"
+                    :aria-label="t('style.accent') + ' ' + (key || 'default')"
                     @click="resume.style.accentColor = key; handleUpdate()"
                   />
                 </div>
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-muted-foreground mb-1.5">Fonte</label>
+                <label class="block text-xs font-bold text-muted-foreground mb-1.5">{{ t('style.font') }}</label>
                 <select
                   :value="resume.style.fontScale"
                   @change="resume.style.fontScale = ($event.target as HTMLSelectElement).value as any; handleUpdate()"
                   class="flex h-9 w-full rounded-md border border-input bg-card px-2 text-xs"
                 >
-                  <option value="compact">Compacta</option>
-                  <option value="normal">Normal</option>
-                  <option value="large">Grande</option>
+                  <option value="compact">{{ t('style.fontCompact') }}</option>
+                  <option value="normal">{{ t('style.fontNormal') }}</option>
+                  <option value="large">{{ t('style.fontLarge') }}</option>
                 </select>
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-muted-foreground mb-1.5">Densidade</label>
+                <label class="block text-xs font-bold text-muted-foreground mb-1.5">{{ t('style.density') }}</label>
                 <select
                   :value="resume.style.density"
                   @change="resume.style.density = ($event.target as HTMLSelectElement).value as any; handleUpdate()"
                   class="flex h-9 w-full rounded-md border border-input bg-card px-2 text-xs"
                 >
-                  <option value="compact">Compacta</option>
-                  <option value="normal">Normal</option>
-                  <option value="relaxed">Espaçada</option>
+                  <option value="compact">{{ t('style.fontCompact') }}</option>
+                  <option value="normal">{{ t('style.fontNormal') }}</option>
+                  <option value="relaxed">{{ t('style.densityRelaxed') }}</option>
                 </select>
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-muted-foreground mb-1.5">Papel</label>
+                <label class="block text-xs font-bold text-muted-foreground mb-1.5">{{ t('style.paper') }}</label>
                 <select
                   :value="resume.style.paper"
                   @change="resume.style.paper = ($event.target as HTMLSelectElement).value as any; handleUpdate()"
@@ -1445,28 +1765,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-muted-foreground mb-1.5">Ícones de contato</label>
+                <label class="block text-xs font-bold text-muted-foreground mb-1.5">{{ t('style.icons') }}</label>
                 <select
                   :value="resume.style.iconTheme"
                   @change="resume.style.iconTheme = ($event.target as HTMLSelectElement).value as any; handleUpdate()"
                   class="flex h-9 w-full rounded-md border border-input bg-card px-2 text-xs"
                 >
-                  <option value="none">Nenhum</option>
-                  <option value="outline">Contorno</option>
-                  <option value="filled">Preenchido</option>
+                  <option value="none">{{ t('style.iconsNone') }}</option>
+                  <option value="outline">{{ t('style.iconsOutline') }}</option>
+                  <option value="filled">{{ t('style.iconsFilled') }}</option>
                 </select>
               </div>
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-muted-foreground mb-1.5">Rodapé do PDF</label>
+              <label class="block text-xs font-bold text-muted-foreground mb-1.5">{{ t('style.footer') }}</label>
               <Input
                 v-model="resume.style.footerText"
                 @input="handleUpdate"
-                placeholder="Ex: Maria Silva — maria@email.com — atualizado em 11/2026"
+                :placeholder="t('style.footerPlaceholder')"
                 class="text-xs"
               />
-              <p class="text-[10px] text-muted-foreground mt-1">Aparece na base de cada página impressa. Vazio = sem rodapé.</p>
+              <p class="text-[10px] text-muted-foreground mt-1">{{ t('style.footerHint') }}</p>
             </div>
           </div>
         </div>
@@ -1477,8 +1797,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
     <div v-if="showShareModal" class="no-print fixed inset-0 z-[110] bg-black/40 flex items-center justify-center p-4" @click.self="showShareModal = false">
       <div class="w-full max-w-md bg-card border border-border-soft rounded-2xl shadow-raised p-6 space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="font-display text-lg font-bold text-foreground">Compartilhar</h3>
-          <Button variant="ghost" size="icon" class="h-8 w-8" @click="showShareModal = false" aria-label="Fechar">
+          <h3 class="font-display text-lg font-bold text-foreground">{{ t('share.title') }}</h3>
+          <Button variant="ghost" size="icon" class="h-8 w-8" @click="showShareModal = false" :aria-label="t('share.closeAria')">
             <Icon name="lucide:x" class="w-4 h-4" />
           </Button>
         </div>
@@ -1490,33 +1810,33 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
             :class="shareMode === 'link' ? 'bg-card shadow-ring text-foreground' : 'text-muted-foreground'"
             @click="shareMode = 'link'"
           >
-            Link aberto
+            {{ t('share.modeOpen') }}
           </button>
           <button
             class="flex-1 py-2 text-sm font-bold rounded-md transition-colors"
             :class="shareMode === 'password' ? 'bg-card shadow-ring text-foreground' : 'text-muted-foreground'"
             @click="shareMode = 'password'"
           >
-            🔒 Com senha
+            🔒 {{ t('share.modePassword') }}
           </button>
         </div>
 
         <div v-if="shareMode === 'password'" class="space-y-2">
-          <Input v-model="sharePassword" type="password" placeholder="Senha (mín. 4 caracteres)" @keyup.enter="buildProtectedLink" />
-          <Button variant="outline" class="w-full" @click="buildProtectedLink">Gerar link protegido</Button>
+          <Input v-model="sharePassword" type="password" :placeholder="t('share.passwordPlaceholder')" @keyup.enter="buildProtectedLink" />
+          <Button variant="outline" class="w-full" @click="buildProtectedLink">{{ t('share.generateProtected') }}</Button>
           <p v-if="shareError" class="text-xs text-destructive">{{ shareError }}</p>
         </div>
 
         <div v-else class="space-y-2">
-          <label class="text-xs font-bold text-muted-foreground">Expira em</label>
+          <label class="text-xs font-bold text-muted-foreground">{{ t('share.expiresIn') }}</label>
           <select
             v-model="shareExpiry"
             class="flex h-9 w-full rounded-md border border-input bg-card px-2 text-sm"
             @change="shareLink = generateShareLink(resume!, { expiresInDays: shareExpiry === 'never' ? undefined : Number(shareExpiry) }); shareQr = generateQrSvg(shareLink, 140)"
           >
-            <option value="never">Nunca</option>
-            <option value="7">7 dias</option>
-            <option value="30">30 dias</option>
+            <option value="never">{{ t('share.never') }}</option>
+            <option value="7">{{ t('share.days7') }}</option>
+            <option value="30">{{ t('share.days30') }}</option>
           </select>
         </div>
 
@@ -1527,30 +1847,30 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleFullscreenKey)
         <!-- QR (F7) — indisponível para links protegidos/curtos demais -->
         <div v-if="shareQr" class="grid justify-items-center gap-1">
           <div class="text-foreground" v-html="shareQr" />
-          <span class="text-[10px] text-muted-foreground">QR aponta para o link</span>
+          <span class="text-[10px] text-muted-foreground">{{ t('share.qrHint') }}</span>
         </div>
         <p v-else class="text-center text-[11px] text-muted-foreground">
-          QR indisponível para este link — use o botão copiar acima.
+          {{ t('share.qrUnavailable') }}
         </p>
 
         <div class="grid gap-2">
           <Button @click="doShareLink">
             <Icon name="lucide:copy" class="w-4 h-4 mr-2" />
-            Copiar link
+            {{ t('share.copyLink') }}
           </Button>
           <div class="grid grid-cols-2 gap-2">
             <Button variant="outline" @click="shareByEmail">
               <Icon name="lucide:mail" class="w-4 h-4 mr-2" />
-              Por e-mail
+              {{ t('share.byEmail') }}
             </Button>
             <Button variant="outline" @click="copyAsText">
               <Icon name="lucide:clipboard-type" class="w-4 h-4 mr-2" />
-              Como texto
+              {{ t('share.asText') }}
             </Button>
           </div>
-          <Button variant="outline" @click="shareAsFile" title="Compartilhar o currículo como arquivo TXT (Web Share)">
+          <Button variant="outline" @click="shareAsFile" :title="t('finding.shareTxtTitle')">
             <Icon name="lucide:file-up" class="w-4 h-4 mr-2" />
-            Como arquivo
+            {{ t('share.asFile') }}
           </Button>
         </div>
       </div>
