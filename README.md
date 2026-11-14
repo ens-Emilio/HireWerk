@@ -75,6 +75,13 @@ apps/nuxt-web/
 └── scripts/test-a11y.mjs
 ```
 
+## 🎬 Vídeo de apresentação
+
+[![Apresentação do HireWerk](docs/media/poster.png)](docs/media/hirewerk-vertical.mp4)
+
+Formato vertical (1080×1920, 26 s): o app em telas reais, do editor ao tracker.
+Arquivo: [`docs/media/hirewerk-vertical.mp4`](docs/media/hirewerk-vertical.mp4).
+
 ## 📚 Documentação
 
 | Documento | Conteúdo |
