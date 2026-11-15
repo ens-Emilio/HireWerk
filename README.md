@@ -79,7 +79,7 @@ apps/nuxt-web/
 
 [![Apresentação do HireWerk](docs/media/poster.png)](docs/media/hirewerk-vertical.mp4)
 
-Formato vertical (1080×1920, 26 s): o app em telas reais, do editor ao tracker.
+Formato vertical (1080×1920, 37 s): capturas reais do app em movimento — editor, score ATS e o resto, com trilha ambiente discreta.
 Arquivo: [`docs/media/hirewerk-vertical.mp4`](docs/media/hirewerk-vertical.mp4).
 
 ## 📚 Documentação
