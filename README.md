@@ -79,7 +79,7 @@ apps/nuxt-web/
 
 [![Apresentação do HireWerk](docs/media/poster.png)](docs/media/hirewerk-vertical.mp4)
 
-Formato vertical (1080×1920, 10,5 s): o score ATS subindo de 60% para 67% quando uma sugestão é aplicada, com som de clique e trilha lo-fi.
+Formato vertical (1080×1920, 14 s), em quatro cenas: a dor (42% e reprovado), a ação (score 42% → 68% → 91% com dois cliques), o resultado (a folha branca e o PDF baixado) e o fecho.
 Arquivo: [`docs/media/hirewerk-vertical.mp4`](docs/media/hirewerk-vertical.mp4).
 
 ## 📚 Documentação
