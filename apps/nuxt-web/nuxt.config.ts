@@ -72,11 +72,21 @@ export default defineNuxtConfig({
           url: '/resumes',
         },
       ],
-      // Receber PDFs compartilhados de outros apps (F8 #84)
+      // Receber PDFs compartilhados de outros apps (F8 #84).
+      // POST + multipart é o único formato que o Android aceita para arquivos;
+      // o service worker (public/share-target-sw.js) intercepta e guarda o texto.
       share_target: {
         action: '/resumes',
-        method: 'GET',
-        params: { title: 'title', text: 'text', url: 'url' },
+        method: 'POST',
+        enctype: 'multipart/form-data',
+        params: {
+          title: 'title',
+          text: 'text',
+          url: 'url',
+          files: [
+            { name: 'file', accept: ['application/pdf', 'text/plain', 'application/json'] },
+          ],
+        },
       },
       icons: [
         { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
@@ -87,6 +97,8 @@ export default defineNuxtConfig({
     workbox: {
       navigateFallback: '/',
       globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
+      // v3: handler do Share Target com arquivo (POST multipart)
+      importScripts: ['/share-target-sw.js'],
       runtimeCaching: [
         {
           urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

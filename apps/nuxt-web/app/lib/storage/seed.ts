@@ -59,9 +59,13 @@ export function seedStorage(): void {
     });
     writeJson(LS_KEYS.meta, meta);
 
-    writeJson(LS_KEYS.templates, DEFAULT_TEMPLATES);
-    writeJson(LS_KEYS.resumesIndex, []);
-    writeJson(LS_KEYS.settings, SettingsSchema.parse({}));
+    // Só cria o que falta: um backup restaurado depois de `wipeAll` (que apaga
+    // `meta`) não pode ter o índice zerado pelo seed do próximo reload.
+    if (readJson(LS_KEYS.templates) === null) writeJson(LS_KEYS.templates, DEFAULT_TEMPLATES);
+    if (readJson(LS_KEYS.resumesIndex) === null) writeJson(LS_KEYS.resumesIndex, []);
+    if (readJson(LS_KEYS.settings) === null) writeJson(LS_KEYS.settings, SettingsSchema.parse({}));
+    if (readJson(LS_KEYS.applications) === null) writeJson(LS_KEYS.applications, []);
+    if (readJson(LS_KEYS.shares) === null) writeJson(LS_KEYS.shares, []);
 }
 
 export function getSettings(): Settings {

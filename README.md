@@ -21,10 +21,14 @@
 - 📱 **Responsivo de verdade**: editor em abas no mobile, min-h-11 em todos os toques, auditoria axe-core no CI.
 - 🔒 **Privacidade por padrão**: sem banco, sem nuvem, sem telemetria no modo offline. Sync opt-in com AES-GCM (chave derivada da passphrase, PBKDF2 100k).
 - ⚡ **Preview em tempo real**: A4/Letter, zoom, fullscreen, layout lado/embaixo.
-- 💾 **Versionamento**: snapshots nomeados, auto-snapshot diário, diff entre versões, undo/redo global e por campo.
-- 🎯 **Score ATS local**: cole a descrição da vaga e veja cobertura de palavras-chave — tudo no aparelho, TF ponderado.
-- 📤 **Export completo**: PDF, PNG, DOCX, TXT, JSON, ZIP (backup com snapshots) + import de PDF, LinkedIn e backup.
-- 🔗 **Share avançado**: link simples, link com senha (Web Crypto), expiração, QR, link encurtado com métricas agregadas, publicação pública revogável.
+- 💾 **Versionamento**: snapshots nomeados, auto-snapshot diário, **diff estruturado campo a campo** entre versões, undo/redo global e por campo.
+- 🎯 **Compatibilidade com a vaga**: score ATS local com histórico persistido, sugestões de tailoring aplicáveis em um clique e descrição da vaga salva no currículo.
+- ✉️ **Carta de apresentação**: documento próprio, gerado a partir do currículo e da vaga, com três tons de escrita — tudo local.
+- 📋 **Tracker de candidaturas**: kanban por status (quero aplicar → enviada → entrevista → proposta/recusada) com follow-ups pendentes.
+- 📤 **Export completo**: PDF, PNG, DOCX, TXT, JSON, **JSON Resume (padrão aberto)**, ZIP + import de PDF, LinkedIn, backup e JSON Resume.
+- 🔗 **Share avançado**: link simples, link com senha (Web Crypto), expiração, QR, link encurtado com métricas, publicação pública revogável e **Share Target com arquivo (Android)**.
+- 🔐 **Criptografia no aparelho**: opcional, AES-GCM sobre o localStorage — sem a frase-senha os currículos não são legíveis nem pelo app.
+- ✍️ **Revisão de escrita**: linter local (verbo fraco, bullet sem métrica, frase longa, clichê) com contagem de páginas A4 em tempo real.
 
 ## 🚀 Como rodar localmente
 
@@ -35,9 +39,10 @@ cd apps/nuxt-web
 bun install
 bun run dev        # http://localhost:4000
 
-bun run generate   # build estático em .output/public
-bun run typecheck  # vue-tsc, 0 erros esperados
-bun run test:a11y  # axe-core nas 7 rotas (requer chromium)
+bun run generate    # build estático em .output/public
+bun run typecheck   # vue-tsc, 0 erros esperados
+bun run test:unit   # node --test: merge de sync, ATS, diff, linter, carta, JSON Resume
+bun run test:a11y   # axe-core nas 8 rotas (requer chromium)
 ```
 
 ## 🛠️ Stack
@@ -62,13 +67,30 @@ apps/nuxt-web/
 │   │   ├── export/      # PDF/PNG/DOCX/TXT/ZIP/JSON, share links
 │   │   ├── import/      # PDF (pdf.js), LinkedIn ZIP
 │   │   ├── sync/        # F10: crypto E2E + cliente de sync
-│   │   ├── ats.ts       # score ATS local
+│   │   │   ├── ats.ts       # score ATS local
 │   │   └── i18n.ts      # pt-BR / en-US
-│   ├── pages/           # dashboard, editor, templates, settings, view, about, privacy
-│   └── stores/          # Pinia (resume, sync)
+│   ├── pages/           # dashboard, editor, templates, settings, view, about, privacy, guide
+│   └── stores/          # Pinia (resume, sync, applications)
 ├── worker/              # F10: Cloudflare Worker (D1) — sync, métricas, publish
 └── scripts/test-a11y.mjs
 ```
+
+## 🎬 Vídeo de apresentação
+
+[![Apresentação do HireWerk](docs/media/poster.png)](docs/media/hirewerk-vertical.mp4)
+
+Formato vertical (1080×1920, 14 s), em quatro cenas: a dor (42% e reprovado), a ação (score 42% → 68% → 91% com dois cliques), o resultado (a folha branca e o PDF baixado) e o fecho.
+Arquivo: [`docs/media/hirewerk-vertical.mp4`](docs/media/hirewerk-vertical.mp4).
+
+## 📚 Documentação
+
+| Documento | Conteúdo |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Camadas, fluxo de uma edição, sync, criptografia, deploy |
+| [docs/DATA-MODEL.md](docs/DATA-MODEL.md) | Schemas Zod, chaves do localStorage, migrações, quota |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Comandos, convenções (i18n, a11y, layout), testes |
+
+Dentro do app: **[Como usar](/guide)** (`/guide`) — 11 tutoriais passo a passo + FAQ, em pt-BR e en-US.
 
 ## 📦 Deploy
 

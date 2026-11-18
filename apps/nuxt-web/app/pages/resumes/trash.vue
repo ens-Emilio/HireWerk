@@ -42,9 +42,9 @@ async function handleRestore(id: string, title: string) {
   isLoading.value = true
   try {
     store.restore(id)
-    toast.success('Restaurado', { description: `"${title}" voltou para seus currículos.` })
+    toast.success(t('toast.restored'), { description: t('toast.restoredDesc', { title }) })
   } catch {
-    toast.error('Erro', { description: 'Não foi possível restaurar.' })
+    toast.error(t('toast.error'), { description: t('toast.restoreFailed') })
   } finally {
     isLoading.value = false
   }
@@ -60,10 +60,10 @@ async function executeDelete() {
   isLoading.value = true
   try {
     store.hardDelete(targetResume.value.id)
-    toast.success('Excluído', { description: `"${targetResume.value.title}" foi removido permanentemente.` })
+    toast.success(t('toast.deleted'), { description: t('toast.deletedDesc', { title: targetResume.value.title }) })
     targetResume.value = null
   } catch {
-    toast.error('Erro', { description: 'Falha ao excluir permanentemente.' })
+    toast.error(t('toast.error'), { description: t('toast.deleteFailed') })
   } finally {
     isLoading.value = false
     showDeleteDialog.value = false
@@ -78,9 +78,9 @@ async function executeEmptyTrash() {
   isLoading.value = true
   try {
     store.emptyTrash()
-    toast.success('Lixeira esvaziada', { description: 'Todos os currículos foram removidos permanentemente.' })
+    toast.success(t('toast.trashEmptied'), { description: t('toast.trashEmptiedDesc') })
   } catch {
-    toast.error('Erro', { description: 'Não foi possível esvaziar a lixeira.' })
+    toast.error(t('toast.error'), { description: t('toast.trashEmptyFailed') })
   } finally {
     isLoading.value = false
     showEmptyDialog.value = false
@@ -99,7 +99,7 @@ async function executeEmptyTrash() {
         <div>
           <h1 class="font-display text-2xl font-bold tracking-tight text-foreground">{{ t('trash.title') }}</h1>
           <p class="text-sm text-muted-foreground mt-1">
-            Nada desaparece de imediato: currículos aqui podem ser restaurados a qualquer momento.
+            {{ t('trash.subtitle') }}
           </p>
         </div>
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -107,7 +107,7 @@ async function executeEmptyTrash() {
             to="/resumes"
             class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            &larr; Voltar para Meus Currículos
+            &larr; {{ t('trash.back') }}
           </NuxtLink>
           <AlertDialog
             v-if="deletedResumes.length > 0"
@@ -120,18 +120,16 @@ async function executeEmptyTrash() {
                 size="sm"
                 class="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
-                Esvaziar Lixeira
+                {{ t('trash.emptyCta') }}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {{ deletedResumes.length }} currículo(s) serão apagados junto com o histórico de versões. Isto não pode ser desfeito.
-                </AlertDialogDescription>
+                <AlertDialogTitle>{{ t('trash.emptyConfirm') }}</AlertDialogTitle>
+                <AlertDialogDescription>{{ t('trash.emptyConfirmBody', { n: deletedResumes.length }) }}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogCancel>{{ t('action.cancel') }}</AlertDialogCancel>
                 <AlertDialogAction
                   @click="executeEmptyTrash"
                   :disabled="isLoading"
@@ -158,7 +156,7 @@ async function executeEmptyTrash() {
               </div>
               <div class="min-w-0">
                 <p class="font-medium text-sm truncate">{{ r.title }}</p>
-                <p class="text-xs text-muted-foreground">Removido em {{ formatDate(r.deletedAt!) }}</p>
+                <p class="text-xs text-muted-foreground">{{ t('trash.removedOn') }} {{ formatDate(r.deletedAt!) }}</p>
               </div>
             </div>
 
@@ -183,18 +181,16 @@ async function executeEmptyTrash() {
                     class="text-destructive hover:bg-destructive-soft hover:text-destructive"
                     @click="confirmDelete({ id: r.id, title: r.title })"
                   >
-                    Excluir de vez
+                    {{ t('trash.deleteForever') }}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Excluir de vez?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      "<strong>{{ r.title }}</strong>" sai da lixeira e desaparece para sempre, incluindo as versões salvas.
-                    </AlertDialogDescription>
+                    <AlertDialogTitle>{{ t('trash.deleteForeverTitle') }}</AlertDialogTitle>
+                    <AlertDialogDescription>{{ t('trash.deleteForeverBody', { title: r.title }) }}</AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogCancel>{{ t('action.cancel') }}</AlertDialogCancel>
                     <AlertDialogAction
                       @click="executeDelete"
                       :disabled="isLoading"
@@ -215,12 +211,12 @@ async function executeEmptyTrash() {
         class="flex flex-col items-center justify-center py-16 px-4 border-2 border-dashed border-border/50 rounded-2xl bg-surface/40 min-h-[42vh]"
       >
         <div class="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center text-muted-foreground mb-5 font-display text-2xl font-extrabold">H</div>
-        <h3 class="font-display text-lg font-bold text-foreground">Lixeira vazia</h3>
+        <h3 class="font-display text-lg font-bold text-foreground">{{ t('trash.emptyTitle') }}</h3>
         <p class="text-sm text-muted-foreground mt-2 text-center max-w-sm">
-          Quando você excluir um currículo, ele aparece aqui e continua recuperável.
+          {{ t('trash.emptyBody') }}
         </p>
         <Button as-child variant="outline" class="mt-6">
-          <NuxtLink to="/resumes">Ver currículos ativos</NuxtLink>
+          <NuxtLink to="/resumes">{{ t('trash.viewActive') }}</NuxtLink>
         </Button>
       </div>
     </template>

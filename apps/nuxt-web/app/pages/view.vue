@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { decodeShareLink, decodeProtectedLink } from '~/lib/export/share'
+import { decodeShareLinkResult, decodeProtectedLink } from '~/lib/export/share'
 import A4Paper from '~/components/resume/A4Paper.vue'
 import { useI18n } from '~/composables/useI18n'
 import { Button } from '~/components/ui/button'
@@ -17,8 +17,13 @@ const decodedDoc = ref<ResumeDoc | null>(null)
 const passwordInput = ref('')
 const wrongPassword = ref(false)
 
-// link simples: decodifica já
-decodedDoc.value = !isProtected.value && encoded.value ? decodeShareLink(encoded.value) : null
+// link simples: decodifica já, guardando POR QUE falhou (expirado ≠ inválido)
+const decodeStatus = ref<'ok' | 'expired' | 'invalid' | 'none'>('none')
+if (!isProtected.value && encoded.value) {
+  const result = decodeShareLinkResult(encoded.value)
+  decodeStatus.value = result.status
+  decodedDoc.value = result.status === 'ok' ? result.doc : null
+}
 
 async function tryUnlock() {
   if (!encoded.value || !passwordInput.value) return
@@ -27,7 +32,7 @@ async function tryUnlock() {
   wrongPassword.value = doc === null
 }
 
-const expired = computed(() => !isProtected.value && encoded.value !== null && decodedDoc.value === null && route.query.r !== undefined)
+const expired = computed(() => decodeStatus.value === 'expired')
 
 const resume = computed(() => decodedDoc.value)
 
@@ -37,8 +42,12 @@ const MinimalTemplate = defineAsyncComponent(() => import('~/components/template
 const ModernTemplate = defineAsyncComponent(() => import('~/components/templates/ModernTemplate.vue'))
 const ExecutiveTemplate = defineAsyncComponent(() => import('~/components/templates/ExecutiveTemplate.vue'))
 const CreativeTemplate = defineAsyncComponent(() => import('~/components/templates/CreativeTemplate.vue'))
+const CoverLetterTemplate = defineAsyncComponent(() => import('~/components/templates/CoverLetterTemplate.vue'))
+
+const isCoverLetter = computed(() => resume.value?.kind === 'coverLetter')
 
 const currentTemplate = computed(() => {
+  if (isCoverLetter.value) return CoverLetterTemplate
   if (!resume.value?.templateId) return ClassicTemplate
   const tid = resume.value.templateId
   if (tid.includes('minimal')) return MinimalTemplate
@@ -96,36 +105,37 @@ useHead({
         <Icon name="lucide:lock" class="w-7 h-7" />
       </div>
       <h2 class="font-display text-xl font-bold text-foreground">{{ t('view.protected') }}</h2>
-      <p class="text-sm text-muted-foreground">Quem compartilhou protegeu este currículo com uma senha.</p>
+      <p class="text-sm text-muted-foreground">{{ t('view.protectedHint') }}</p>
       <form class="w-full space-y-3" @submit.prevent="tryUnlock">
         <Input
           v-model="passwordInput"
           type="password"
-          placeholder="Digite a senha"
-          aria-label="Senha do currículo"
+          :placeholder="t('view.passwordPlaceholder')"
+          :aria-label="t('view.passwordAria')"
         />
-        <Button type="submit" class="w-full">Abrir currículo</Button>
+        <Button type="submit" class="w-full">{{ t('view.open') }}</Button>
       </form>
-      <p v-if="wrongPassword" class="text-sm text-destructive">Senha incorreta. Tente novamente.</p>
+      <p v-if="wrongPassword" class="text-sm text-destructive">{{ t('view.wrongPasswordShort') }}</p>
     </div>
 
     <template v-else-if="resume">
       <div class="no-print mb-6 text-center">
         <h1 class="text-xl font-bold text-foreground">{{ resume.data?.name || resume.title }}</h1>
-        <p class="text-sm text-muted-foreground mt-1">Currículo compartilhado via HireWerk</p>
+        <p class="text-sm text-muted-foreground mt-1">{{ t('view.sharedVia') }}</p>
         <Button variant="outline" size="sm" class="mt-3" @click="downloadPdf">
           <Icon name="lucide:download" class="w-4 h-4 mr-2" />
-          Baixar PDF
+          {{ t('view.downloadPdf') }}
         </Button>
       </div>
       <div class="w-full max-w-[800px]">
         <A4Paper>
-          <component :is="currentTemplate" :data="resume.data" />
+          <component v-if="isCoverLetter" :is="currentTemplate" :doc="resume" />
+          <component v-else :is="currentTemplate" :data="resume.data" />
         </A4Paper>
       </div>
       <div class="no-print mt-8 flex items-center gap-2 text-sm text-muted-foreground">
         <Icon name="lucide:briefcase-business" class="w-4 h-4" />
-        <span>Criado com <NuxtLink to="/" class="text-primary font-semibold hover:underline">HireWerk</NuxtLink> · ao imprimir esta tela, sai apenas a página A4</span>
+        <span>{{ t('view.printHint') }}</span>
       </div>
     </template>
 
@@ -133,14 +143,14 @@ useHead({
       <div class="w-16 h-16 bg-destructive-soft text-destructive rounded-2xl flex items-center justify-center mb-1">
         <Icon name="lucide:link-off" class="w-8 h-8" />
       </div>
-      <h2 class="font-display text-xl font-bold text-foreground">Link inválido</h2>
+      <h2 class="font-display text-xl font-bold text-foreground">{{ t('view.invalidTitle') }}</h2>
       <p class="text-muted-foreground max-w-sm">
-        {{ expired ? 'Este link de compartilhamento expirou.' : 'Este link não contém um currículo válido. Peça um novo link a quem compartilhou.' }}
+        {{ expired ? t('view.expired') : t('view.invalid') }}
       </p>
       <Button variant="link" as-child>
         <NuxtLink to="/" class="mt-4 inline-flex items-center gap-2">
           <Icon name="lucide:arrow-left" class="w-4 h-4" />
-          Voltar para o início
+          {{ t('view.backHome') }}
         </NuxtLink>
       </Button>
     </div>

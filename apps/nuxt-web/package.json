@@ -9,7 +9,8 @@
     "preview": "nuxt preview",
     "typecheck": "nuxt typecheck",
     "test:a11y": "node scripts/test-a11y.mjs",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "test:unit": "node --experimental-strip-types --test tests/v3.test.ts"
   },
   "dependencies": {
     "@nuxtjs/tailwindcss": "^6.14.0",

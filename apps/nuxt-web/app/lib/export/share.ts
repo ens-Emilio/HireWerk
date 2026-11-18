@@ -57,19 +57,30 @@ export function generateShareLink(doc: ResumeDoc, opts?: { expiresInDays?: numbe
     return `${origin}/view?r=${encoded}`
 }
 
-export function decodeShareLink(encoded: string): ResumeDoc | null {
+/** Resultado do decode: distingue link expirado de link inválido. */
+export type DecodeShareResult =
+    | { status: 'ok'; doc: ResumeDoc }
+    | { status: 'expired' }
+    | { status: 'invalid' }
+
+export function decodeShareLinkResult(encoded: string): DecodeShareResult {
     try {
         let b64s = encoded.replaceAll('-', '+').replaceAll('_', '/')
         while (b64s.length % 4) b64s += '='
         const payload: SharePayload = JSON.parse(atob(b64s))
         // formato v2 (com envelope {d, e}) ou v1 (doc direto, retrocompatível)
         const rawDoc = payload?.d !== undefined ? payload.d : payload
-        if (payload?.e && new Date(payload.e) < new Date()) return null
+        if (payload?.e && new Date(payload.e) < new Date()) return { status: 'expired' }
         const parsed = ResumeDocSchema.safeParse(rawDoc)
-        return parsed.success ? parsed.data : null
+        return parsed.success ? { status: 'ok', doc: parsed.data } : { status: 'invalid' }
     } catch {
-        return null
+        return { status: 'invalid' }
     }
+}
+
+export function decodeShareLink(encoded: string): ResumeDoc | null {
+    const result = decodeShareLinkResult(encoded)
+    return result.status === 'ok' ? result.doc : null
 }
 
 /* ============ link com senha ============ */
